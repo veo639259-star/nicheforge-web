@@ -1,0 +1,31 @@
+name: Extract deployment archive
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract ZIP into repo root
+        run: |
+          set -e
+          unzip -o nicheforge-web-deploy.zip
+          if [ -d nicheforge-web ]; then
+            shopt -s dotglob nullglob
+            mv nicheforge-web/* .
+            rmdir nicheforge-web || true
+          fi
+          rm -f nicheforge-web-deploy.zip
+          ls -la
+      - name: Commit extracted files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Extract app files from deployment archive" || echo "nothing to commit"
+          git push
