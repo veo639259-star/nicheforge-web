@@ -5,20 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Admin login · NicheForge</title>
 <style>
-:root{--bg:#0b0d10;--surface:#12151a;--border:#242b34;--text:#eef1f4;--muted:#9aa4af;--accent:#b8e62e;--accent-ink:#141800;--red:#f87171;--amber:#fbbf24}
+:root{--bg:#000;--surface:#0A0A0A;--border:#1F1F1F;--text:#fff;--muted:#9CA3AF;--lime:#C6FF3E;--lime-ink:#0B1000;--red:#F87171;--amber:#FBBF24}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);
-font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;min-height:100vh;
+font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;min-height:100vh;
 display:flex;align-items:center;justify-content:center;padding:20px}
-.card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:34px 28px}
-.mark{width:46px;height:46px;border-radius:13px;background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.5rem;margin-bottom:16px}
-h1{margin:0 0 6px;font-size:1.35rem}p.sub{color:var(--muted);margin:0 0 20px;font-size:.92rem}
+.card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:36px 30px}
+.mark{width:48px;height:48px;border-radius:14px;background:var(--lime);color:var(--lime-ink);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.55rem;margin-bottom:18px;box-shadow:0 0 22px rgba(198,255,62,.28)}
+h1{margin:0 0 6px;font-size:1.4rem;font-weight:800;letter-spacing:-.02em}
+p.sub{color:var(--muted);margin:0 0 22px;font-size:.92rem}
 label{display:block;font-weight:600;margin-bottom:8px;font-size:.9rem}
-input{width:100%;background:#171c22;border:1px solid var(--border);color:var(--text);border-radius:10px;padding:14px;font-size:1rem;min-height:52px}
-input:focus{outline:none;border-color:var(--accent)}
-button{width:100%;margin-top:16px;background:var(--accent);color:var(--accent-ink);border:none;border-radius:10px;padding:15px;font-weight:800;font-size:1rem;cursor:pointer;min-height:54px}
-.err{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.4);color:var(--red);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:.9rem}
-.warn{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.35);color:var(--amber);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:.85rem}
-code{background:#08090b;padding:2px 7px;border-radius:6px;font-size:.82rem}
+input{width:100%;background:#111;border:1px solid var(--border);color:var(--text);border-radius:10px;padding:14px;font-size:1rem;min-height:52px;font-family:inherit}
+input:focus{outline:none;border-color:var(--lime);box-shadow:0 0 0 3px rgba(198,255,62,.14)}
+button{width:100%;margin-top:16px;background:var(--lime);color:var(--lime-ink);border:none;border-radius:10px;padding:15px;font-weight:800;font-size:1rem;cursor:pointer;min-height:54px;box-shadow:0 0 22px rgba(198,255,62,.28);font-family:inherit}
+button:hover{filter:brightness(1.07)}
+.err{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.35);color:var(--red);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:.9rem}
+.warn{background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.3);color:var(--amber);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:.85rem}
+code{background:#0d0d0d;padding:2px 7px;border-radius:6px;font-size:.82rem;border:1px solid var(--border)}
+.foot{margin-top:22px;text-align:center;color:var(--muted);font-size:.76rem}
+.foot b{color:var(--lime)}
 </style>
 </head>
 <body>
@@ -37,6 +41,7 @@ code{background:#08090b;padding:2px 7px;border-radius:6px;font-size:.82rem}
     <input type="password" name="password" autocomplete="current-password" autofocus>
     <button type="submit">Enter →</button>
   </form>
+  <div class="foot">OBSIDIAN LIME · <b>BILALIFY</b></div>
 </div>
 </body>
 </html>

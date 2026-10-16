@@ -4,7 +4,14 @@
 {% block content %}
 <div class="page-head">
   <div><h1>⚠ Error panel</h1><p class="muted">Har kharaabi yahan — traceback ke saath. Jarvis ko bhi alerts milte hain.</p></div>
-  <button class="btn sm ghost" onclick="simErr(this)">🧪 Test error hook</button>
+  <button class="btn sm ghost" data-mode="ultra" onclick="simErr(this)">🧪 Test error hook</button>
+</div>
+
+<div class="info" data-mode="ultra">
+  <b style="color:var(--lime)">Ultra · Alerts API (Jarvis monitor):</b><br>
+  <code>GET /admin/api/alerts?key=…</code> — last 100 alerts as JSON.<br>
+  <code>GET /admin/api/alerts?key=…&amp;since=&lt;iso-ts&gt;</code> — alerts after timestamp.<br>
+  Full tracebacks: expand a card below, or <code>GET /admin/api/errors/&lt;id&gt;/traceback</code> (admin session).
 </div>
 
 <form class="filters" method="get">

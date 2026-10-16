@@ -10,7 +10,7 @@
 <div class="timeline">
 {% for p in posts %}
   <div class="tl-item {{ 'done' if p.status in ('posted','done') else 'next' }}">
-    <div class="tl-time">{{ p.time }} <span class="pill" style="border:1px solid {{ colors.get(p.niche,'#666') }};color:{{ colors.get(p.niche,'#999') }}">{{ p.niche }}</span>
+    <div class="tl-time">{{ p.time }} <span class="pill" style="border-color:{{ colors.get(p.niche,'#666') }};color:{{ colors.get(p.niche,'#999') }}">{{ p.niche }}</span>
     <span class="pill {{ 'green' if p.status in ('posted','done') else 'grey' }}">{{ p.status }}</span></div>
     <div class="card tl-card"><b>{{ p.title or ('Post #'+p.id|string) }}</b></div>
   </div>

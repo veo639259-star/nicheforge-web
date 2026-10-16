@@ -32,7 +32,7 @@
   </div>
 
   {% if s.id=='flow' %}
-  <div class="card" style="margin-bottom:14px; border-color:rgba(251,191,36,.35)">
+  <div class="card" style="margin-bottom:14px; border-color:rgba(251,191,36,.3)">
     <h3>📌 Flow paste helper</h3>
     <p class="small muted">Flow ka prompt box automation se paste <b>accept nahi karta</b> (known limitation). Is liye: neeche job ka <b>Copy prompt</b> dabayein → Flow kholein → <b>khud ek dafa paste</b> karein → Generate dabayein. Bas ek paste, baqi sab app sambhalta hai.</p>
   </div>
@@ -42,7 +42,7 @@
   {% for j in pending[s.id] %}
   <div class="job" data-id="{{ j.id }}">
     <div class="grow">
-      <div><span class="pill" style="border:1px solid #555;color:#bbb">{{ j.niche or 'general' }}</span>
+      <div><span class="pill" style="border-color:#2a2a2a;color:#bbb">{{ j.niche or 'general' }}</span>
       <span class="faint small">#{{ j.id }}</span></div>
       <div class="prompt" id="pr-{{ j.id }}" style="margin:8px 0; -webkit-line-clamp:4">{{ j.prompt }}</div>
       <div class="btn-row">

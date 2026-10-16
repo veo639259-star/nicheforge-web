@@ -3,22 +3,42 @@
 {% block title %}Dashboard{% endblock %}
 {% block content %}
 <div class="page-head">
-  <div><h1>Dashboard</h1><p class="muted">Saare 14 niches ek nazar mein · {{ totals.pending }} approvals pending</p></div>
+  <div><h1>Content Automation</h1><p class="muted">Monitor and manage your automated content pipelines · {{ totals.pending }} approvals pending</p></div>
   <div class="btn-row">
     <a class="btn primary" href="{{ url_for('admin.batches') }}">Review batches →</a>
   </div>
 </div>
 
 <div class="stat-row">
-  <div class="stat"><div class="num">{{ totals.pending }}</div><div class="lbl">Pending approvals</div></div>
-  <div class="stat"><div class="num" style="color:var(--red)">{{ totals.open_errors }}</div><div class="lbl">Open errors</div></div>
-  <div class="stat"><div class="num">{{ totals.scheduled_today }}</div><div class="lbl">Scheduled today</div></div>
-  <div class="stat"><div class="num">{{ totals.jobs_done }}</div><div class="lbl">Images generated</div></div>
+  <div class="stat">
+    <div class="stat-ico" style="background:var(--lime);color:var(--lime-ink)">▦</div>
+    <div><div class="num">{{ totals.pending }}</div><div class="lbl">Pending approvals</div><div class="sub" style="color:var(--lime)">Batches</div></div>
+  </div>
+  <div class="stat">
+    <div class="stat-ico" style="background:rgba(245,197,24,.16);color:var(--gold)">◷</div>
+    <div><div class="num">{{ totals.scheduled_today }}</div><div class="lbl">Scheduled today</div><div class="sub" style="color:var(--gold)">PKT timeline</div></div>
+  </div>
+  <div class="stat">
+    <div class="stat-ico" style="background:rgba(248,113,113,.14);color:var(--red)">⚠</div>
+    <div><div class="num" style="color:var(--red)">{{ totals.open_errors }}</div><div class="lbl">Open errors</div><div class="sub" style="color:var(--red)">Needs attention</div></div>
+  </div>
+  <div class="stat">
+    <div class="stat-ico" style="background:rgba(96,165,250,.14);color:var(--blue)">✦</div>
+    <div><div class="num">{{ totals.jobs_done }}</div><div class="lbl">Images generated</div><div class="sub" style="color:var(--blue)">All time</div></div>
+  </div>
 </div>
 
-<div class="grid niches">
+<div class="page-head" style="margin-bottom:14px">
+  <div><h2>Niche Status</h2></div>
+  <div class="btn-row" style="align-items:center">
+    <span class="pill lime" id="healthpill">14 niches</span>
+    <input class="input" id="nicheq" placeholder="Search niches…" oninput="filterNiches(this.value)" style="width:200px;min-height:44px">
+  </div>
+</div>
+
+<div class="grid niches" id="nichegrid">
 {% for s in stats %}
-  <div class="card niche-card hover">
+  <div class="card niche-card hover" data-name="{{ s.niche }}">
     <div class="niche-top">
       <div class="niche-name"><span class="dot" style="background:{{ s.color }}"></span>{{ s.niche }}</div>
       {% if s.status=='healthy' %}<span class="pill green"><span class="dotlive"></span>Healthy</span>
@@ -34,4 +54,18 @@
   </div>
 {% endfor %}
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+  var healthy=document.querySelectorAll('.pill.green').length;
+  document.getElementById('healthpill').textContent='14 niches · '+healthy+' healthy';
+})();
+function filterNiches(q){
+  q=(q||'').toLowerCase();
+  document.querySelectorAll('#nichegrid .niche-card').forEach(function(c){
+    c.style.display = c.getAttribute('data-name').indexOf(q)>=0 ? '' : 'none';
+  });
+}
+</script>
 {% endblock %}

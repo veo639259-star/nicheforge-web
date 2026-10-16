@@ -45,7 +45,7 @@
     {% if j.result_path %}<img class="thumb" src="{{ url_for('admin.media', rel=j.result_path) }}" onclick="lb(this.src)">
     {% else %}<div class="thumb" style="width:84px;height:84px;border-radius:10px;background:var(--surface3);flex:0 0 84px;display:flex;align-items:center;justify-content:center;font-size:1.6rem">🖼</div>{% endif %}
     <div class="grow">
-      <div><span class="pill" style="border:1px solid {{ colors.get(j.niche,'#666') }};color:{{ colors.get(j.niche,'#999') }}">{{ j.niche or 'general' }}</span>
+      <div><span class="pill" style="border-color:{{ colors.get(j.niche,'#666') }};color:{{ colors.get(j.niche,'#999') }}">{{ j.niche or 'general' }}</span>
       {% if j.status=='done' %}<span class="pill green">Done</span>
       {% elif j.status=='failed' %}<span class="pill red">Failed</span>
       {% elif j.status=='generating' %}<span class="pill blue">Generating…</span>

@@ -3,7 +3,7 @@
 {% block title %}Batches{% endblock %}
 {% block content %}
 <div class="page-head">
-  <div><h1>Batch approval</h1><p class="muted">Tap ✓ ya ✗ — ya select kar ke bulk approve. <span class="faint">Ideas-first workflow.</span></p></div>
+  <div><h1>Batch approval</h1><p class="muted">Tap ✓ ya ✗ — ideas-first workflow.</p></div>
 </div>
 
 <form class="filters" method="get">
@@ -23,8 +23,8 @@
 {% for i in ideas %}
   <div class="idea" data-id="{{ i.id }}">
     <div class="idea-top">
-      <input type="checkbox" class="idea-check" data-id="{{ i.id }}" onchange="updBulk()">
-      <span class="pill" style="border:1px solid {{ colors[i.niche] }}; color:{{ colors[i.niche] }}">{{ i.niche }}</span>
+      <input type="checkbox" class="idea-check" data-mode="pro ultra" data-id="{{ i.id }}" onchange="updBulk()">
+      <span class="pill" style="border-color:{{ colors[i.niche] }}; color:{{ colors[i.niche] }}">{{ i.niche }}</span>
       <span class="faint small" style="margin-left:auto">#{{ i.id }}</span>
     </div>
     <div class="idea-title">{{ i.title }}</div>
@@ -39,7 +39,7 @@
   </div>
 {% endfor %}
 </div>
-<div class="bulkbar" id="bulkbar">
+<div class="bulkbar" id="bulkbar" data-mode="pro ultra">
   <b id="bulkcount">0 selected</b>
   <button class="btn sm primary" onclick="bulk('approved')">✓ Approve selected</button>
   <button class="btn sm danger" onclick="bulk('rejected')">✗ Reject selected</button>
@@ -52,11 +52,11 @@
 {% block scripts %}
 <script>
 function updBulk(){
-  var n=document.querySelectorAll('.idea-check:checked').length;
+  var n=document.querySelectorAll('.idea-check:not(.mode-hidden):checked').length;
   document.getElementById('bulkcount').textContent=n+' selected';
   document.getElementById('bulkbar').classList.toggle('show', n>0);
   document.querySelectorAll('.idea').forEach(function(c){
-    var cb=c.querySelector('.idea-check'); c.classList.toggle('sel', cb&&cb.checked);
+    var cb=c.querySelector('.idea-check'); c.classList.toggle('sel', cb&&cb.checked&&!cb.classList.contains('mode-hidden'));
   });
 }
 function clearSel(){ document.querySelectorAll('.idea-check').forEach(function(c){c.checked=false}); updBulk(); }
