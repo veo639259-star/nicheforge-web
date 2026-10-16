@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NicheForge — Intel</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: #0f1115; color: #e8e9ec; margin: 0; padding: 24px; }
+  h1 { font-size: 1.4rem; margin: 0 0 16px; }
+  h1 span { color: #7dd87d; }
+  h2 { font-size: 1.05rem; margin: 26px 0 10px; color: #cfe3ff; }
+  nav { display: flex; gap: 14px; margin-bottom: 20px; font-size: 0.92rem; flex-wrap: wrap; }
+  nav a { color: #9fc2ee; text-decoration: none; }
+  nav a.here { color: #fff; font-weight: 700; }
+  .panel { background: #171a21; border: 1px solid #2a2e38; border-radius: 10px;
+           padding: 16px; margin-bottom: 14px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  select, input[type=text], textarea, input[type=number] {
+    background: #1a1d24; color: #e8e9ec; border: 1px solid #333844;
+    border-radius: 6px; padding: 8px 10px; font-size: 0.9rem; }
+  textarea { width: 100%; min-height: 64px; }
+  button { cursor: pointer; border: none; border-radius: 6px; padding: 8px 16px;
+           font-size: 0.9rem; font-weight: 600; background: #2e5e8e; color: #fff; }
+  button:hover { background: #3570a8; }
+  button.warn { background: #8e2e2e; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+  th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid #23262e; }
+  th { color: #9fc2ee; font-weight: 600; }
+  .muted { color: #8a8f9c; font-size: 0.85rem; }
+  .alert { background: #3a1f1f; border: 1px solid #7d2e2e; border-radius: 8px;
+           padding: 10px 14px; margin-bottom: 10px; }
+  .okbox { background: #1c3323; border: 1px solid #2e7d46; border-radius: 8px;
+           padding: 10px 14px; margin-bottom: 10px; }
+  .hchip { display: inline-block; min-width: 44px; text-align: center; font-weight: 700;
+           padding: 3px 10px; border-radius: 999px; font-size: 0.85rem; }
+  .hhi { background: #1e4d2b; color: #7dd87d; }
+  .hmid { background: #4a3d1e; color: #e8c86a; }
+  .hlo { background: #4a2420; color: #e89a8a; }
+  .flag { font-size: 0.75rem; background: #4a2420; color: #e89a8a; padding: 2px 8px;
+          border-radius: 999px; margin-left: 6px; }
+  .insight { padding: 6px 0; border-bottom: 1px dashed #2a2e38; font-size: 0.9rem; }
+  #msg { margin-bottom: 12px; min-height: 1.2em; font-size: 0.9rem; }
+  #msg.ok { color: #7dd87d; } #msg.err { color: #e89a8a; }
+</style>
+</head>
+<body>
+  <h1>NicheForge — <span>Intel</span></h1>
+  <nav>
+    <a href="/">Inbox</a><a href="/pipeline">Pipeline</a>
+    <a href="/overlay">Overlay Studio</a><a href="/schedule">Schedule</a>
+    <a href="/publish">Publish</a><a href="/browser">Browser</a>
+    <a href="/intel" class="here">Intel</a><a href="/expand">Expand</a>
+  </nav>
+  <div id="msg"></div>
+
+  <h2>Performance Pulse</h2>
+  <div class="panel">
+    <div class="row">
+      <select id="pulseNiche"><option value="">All niches</option></select>
+      <button id="pulseLoad">Load</button>
+      <button id="pulseHealth">Refresh health scores</button>
+    </div>
+    <div id="pulseInsights"></div>
+    <div id="pulseTable"></div>
+    <h2 style="margin-top:18px">Add metric</h2>
+    <div class="row">
+      <select id="mNiche"></select>
+      <input type="text" id="mPostId" placeholder="post_id">
+      <input type="text" id="mPostedAt" placeholder="posted_at (2026-10-15T18:00)">
+      <input type="number" id="mLikes" placeholder="likes" min="0">
+      <input type="number" id="mShares" placeholder="shares" min="0">
+      <input type="number" id="mComments" placeholder="comments" min="0">
+      <input type="number" id="mReach" placeholder="reach" min="0">
+      <button id="mAdd">Add</button>
+    </div>
+    <div class="row">
+      <textarea id="mCsv" placeholder="CSV import: niche,post_id,posted_at,likes,shares,comments,reach (one per line)"></textarea>
+    </div>
+    <div class="row"><button id="mImport">Import CSV</button></div>
+  </div>
+
+  <h2>Niche Health</h2>
+  <div class="panel"><div id="healthGrid" class="row"></div></div>
+
+  <h2>Shadow Ban Watch</h2>
+  <div class="panel"><div id="shadowBox"><span class="muted">Loading…</span></div></div>
+
+  <h2>Trend Radar</h2>
+  <div class="panel">
+    <div class="row"><button id="trendPoll">Poll now</button>
+      <span class="muted" id="trendNote">Polls Google Trends PK + news RSS (≥15 min apart).</span></div>
+    <div id="trendList"></div>
+  </div>
+
+  <h2>Newsjacking Autopilot</h2>
+  <div class="panel">
+    <input type="text" id="njHeadline" placeholder="Breaking headline" style="width:100%;margin-bottom:8px">
+    <textarea id="njFacts" placeholder="Key facts (one per line)"></textarea>
+    <div class="row" style="margin-top:8px">
+      <input type="text" id="njNiches" placeholder="niches (comma separated, blank = auto)">
+      <button id="njRun">Generate briefs</button>
+    </div>
+    <div id="njOut" class="muted"></div>
+  </div>
+
+  <h2>Story Weaver</h2>
+  <div class="panel">
+    <input type="text" id="wvHeadline" placeholder="Event headline" style="width:100%;margin-bottom:8px">
+    <textarea id="wvFacts" placeholder="Key facts (one per line)"></textarea>
+    <div class="row" style="margin-top:8px"><button id="wvRun">Weave 14 niche briefs</button></div>
+    <div id="wvOut"></div>
+  </div>
+
+  <h2>Crisis Shield</h2>
+  <div class="panel">
+    <div class="row">
+      <button id="crisisScan" class="warn">Scan news now</button>
+      <button id="crisisLoad">Show events</button>
+    </div>
+    <div id="crisisBox"><span class="muted">No scan yet.</span></div>
+  </div>
+
+  <h2>Evergreen Recycler</h2>
+  <div class="panel">
+    <div class="row"><button id="recRun">Find + brief old winners</button></div>
+    <div id="recOut" class="muted"></div>
+  </div>
+
+  <h2>Festival Auto-Calendar</h2>
+  <div class="panel">
+    <div class="row"><button id="festGen">Generate packs (7 days ahead)</button></div>
+    <div id="festList"></div>
+  </div>
+
+  <h2>Viral Autopsy</h2>
+  <div class="panel">
+    <div class="row">
+      <select id="auNiche"></select>
+      <input type="text" id="auUrl" placeholder="competitor post URL" style="flex:1">
+    </div>
+    <textarea id="auText" placeholder="Post text (copy-paste)"></textarea>
+    <div class="row" style="margin-top:8px">
+      <input type="number" id="auLikes" placeholder="likes" min="0">
+      <input type="number" id="auComments" placeholder="comments" min="0">
+      <input type="number" id="auShares" placeholder="shares" min="0">
+      <button id="auRun">Teardown</button>
+    </div>
+    <div id="auOut"></div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+  var msg = document.getElementById("msg");
+  function setMsg(t, ok) { msg.textContent = t || ""; msg.className = ok ? "ok" : "err"; }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function api(path, opts) {
+    return fetch(path, opts).then(function (r) {
+      return r.json().catch(function () { return { error: "bad response" }; });
+    });
+  }
+  function hchip(v) {
+    var c = v >= 70 ? "hhi" : (v >= 45 ? "hmid" : "hlo");
+    return '<span class="hchip ' + c + '">' + v + '</span>';
+  }
+
+  function loadNiches() {
+    api("/api/niches").then(function (d) {
+      ["pulseNiche", "mNiche", "auNiche"].forEach(function (id) {
+        var sel = document.getElementById(id), keep = sel.options[0];
+        sel.innerHTML = ""; if (keep) sel.appendChild(keep);
+        (d.niches || []).forEach(function (n) {
+          var o = document.createElement("option");
+          o.value = n; o.textContent = n; sel.appendChild(o);
+        });
+      });
+    });
+  }
+
+  function loadPulse() {
+    var n = document.getElementById("pulseNiche").value;
+    api("/api/intel/pulse/summary" + (n ? "?niche=" + encodeURIComponent(n) : ""))
+      .then(function (d) {
+        if (d.error) { setMsg(d.error, false); return; }
+        var html = "", rows = "", names = Object.keys(d).sort();
+        names.forEach(function (n) {
+          var r = d[n];
+          if (r.insight) html += '<div class="insight">' + esc(r.insight) + "</div>";
+          rows += "<tr><td>" + esc(n) + "</td><td>" + r.posts + "</td>" +
+            "<td>" + r.avg_reach + "</td><td>" +
+            esc(r.best_post ? r.best_post.post_id + " (" + r.best_post.engagement + ")" : "—") + "</td><td>" +
+            esc(r.worst_post ? r.worst_post.post_id + " (" + r.worst_post.engagement + ")" : "—") + "</td></tr>";
+        });
+        document.getElementById("pulseInsights").innerHTML = html || '<span class="muted">No insights yet.</span>';
+        document.getElementById("pulseTable").innerHTML =
+          '<table><tr><th>Niche</th><th>Posts</th><th>Avg reach</th><th>Best</th><th>Worst</th></tr>' +
+          (rows || '<tr><td colspan="5" class="muted">No metrics yet — add some above.</td></tr>') + "</table>";
+      }).catch(function () { setMsg("Pulse load failed.", false); });
+  }
+
+  function loadHealth() {
+    api("/api/intel/health").then(function (d) {
+      var html = "";
+      Object.keys(d.health || {}).sort().forEach(function (n) {
+        var h = d.health[n];
+        var flags = (h.flags || []).map(function (f) {
+          return '<span class="flag">' + esc(f) + '</span>';
+        }).join("");
+        html += '<div class="panel" style="min-width:180px">' + hchip(h.score) +
+          " <b>" + esc(n) + "</b>" + flags + "</div>";
+      });
+      document.getElementById("healthGrid").innerHTML = html || '<span class="muted">No data.</span>';
+    });
+  }
+
+  function loadShadow() {
+    api("/api/intel/shadow").then(function (d) {
+      var html = "";
+      (d.alerts || []).forEach(function (a) {
+        html += '<div class="alert"><b>' + esc(a.niche) + "</b>: reach dropped to " +
+          a.current_reach + " vs 7-day median " + a.median_reach +
+          " (" + a.drop_pct + "%). Possible restriction — check manually.</div>";
+      });
+      document.getElementById("shadowBox").innerHTML =
+        html || '<div class="okbox">No sudden drops detected.</div>';
+    });
+  }
+
+  function loadTrends() {
+    api("/api/intel/trends").then(function (d) {
+      var html = "";
+      (d.alerts || []).forEach(function (a) {
+        html += '<div class="insight"><b>' + esc(a.topic) + "</b> " +
+          '<span class="muted">fits: ' + esc(a.niches_csv || "—") + "</span></div>";
+      });
+      document.getElementById("trendList").innerHTML =
+        html || '<span class="muted">No trend alerts yet.</span>';
+    });
+  }
+
+  function loadCrisis() {
+    api("/api/intel/crisis").then(function (d) {
+      var html = "";
+      (d.events || []).forEach(function (e) {
+        html += '<div class="' + (e.status === "active" ? "alert" : "okbox") + '"><b>' +
+          esc(e.headline) + "</b><br><span class='muted'>" + esc(e.detected_at) +
+          " · paused " + e.paused_count + " posts · " + esc(e.status) + "</span>";
+        if (e.status === "active") {
+          html += ' <button data-ev="' + e.id + '" class="resumeBtn">Resume posts</button>';
+        }
+        html += "</div>";
+      });
+      var box = document.getElementById("crisisBox");
+      box.innerHTML = html || '<span class="muted">No events recorded.</span>';
+      box.querySelectorAll(".resumeBtn").forEach(function (b) {
+        b.addEventListener("click", function () {
+          api("/api/intel/crisis/resume", { method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ event_id: Number(b.getAttribute("data-ev")) })
+          }).then(function (r) {
+            setMsg(r.ok ? "Resumed " + r.restored + " posts." : ("Failed: " + (r.reason || "")), !!r.ok);
+            loadCrisis();
+          });
+        });
+      });
+    });
+  }
+
+  function loadFestivals() {
+    api("/api/intel/festivals").then(function (d) {
+      var html = "";
+      (d.packs || []).forEach(function (p) {
+        html += '<div class="insight"><b>' + esc(p.name) + "</b> — " + esc(p.pack_date) +
+          ' <span class="muted">' + esc(p.status) + "</span></div>";
+      });
+      document.getElementById("festList").innerHTML =
+        html || '<span class="muted">No packs yet — generate for the next 7 days.</span>';
+    });
+  }
+
+  document.getElementById("pulseLoad").addEventListener("click", loadPulse);
+  document.getElementById("pulseHealth").addEventListener("click", function () {
+    api("/api/intel/health/refresh", { method: "POST" }).then(function () { loadHealth(); });
+  });
+  document.getElementById("mAdd").addEventListener("click", function () {
+    var b = {
+      niche: document.getElementById("mNiche").value,
+      post_id: document.getElementById("mPostId").value,
+      posted_at: document.getElementById("mPostedAt").value,
+      likes: +document.getElementById("mLikes").value || 0,
+      shares: +document.getElementById("mShares").value || 0,
+      comments: +document.getElementById("mComments").value || 0,
+      reach: +document.getElementById("mReach").value || 0
+    };
+    api("/api/intel/pulse/metric", { method: "POST",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify(b)
+    }).then(function (r) {
+      setMsg(r.ok ? "Metric added." : ("Failed: " + (r.reason || "")), !!r.ok);
+      loadPulse();
+    });
+  });
+  document.getElementById("mImport").addEventListener("click", function () {
+    api("/api/intel/pulse/import", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ csv: document.getElementById("mCsv").value })
+    }).then(function (r) {
+      setMsg(r.ok ? ("Imported " + r.count + " rows.") : ("Failed: " + (r.reason || "")), !!r.ok);
+      loadPulse();
+    });
+  });
+  document.getElementById("trendPoll").addEventListener("click", function () {
+    setMsg("Polling…", true);
+    api("/api/intel/trends/poll", { method: "POST" }).then(function (r) {
+      setMsg(r.status === "ok" ? ("Found " + (r.topics || []).length + " topics.") :
+        ("Poll " + r.status + ": " + (r.reason || "")), r.status === "ok");
+      loadTrends();
+    });
+  });
+  document.getElementById("njRun").addEventListener("click", function () {
+    var niches = document.getElementById("njNiches").value.split(",")
+      .map(function (s) { return s.trim(); }).filter(Boolean);
+    api("/api/intel/newsjack", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        headline: document.getElementById("njHeadline").value,
+        facts: document.getElementById("njFacts").value,
+        niches: niches
+      })
+    }).then(function (r) {
+      document.getElementById("njOut").textContent =
+        r.ok ? r.briefs_created + " briefs sent to the Inbox." : ("Failed: " + (r.reason || ""));
+    });
+  });
+  document.getElementById("wvRun").addEventListener("click", function () {
+    document.getElementById("wvOut").innerHTML = '<span class="muted">Weaving…</span>';
+    api("/api/intel/weave", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        headline: document.getElementById("wvHeadline").value,
+        facts: document.getElementById("wvFacts").value
+      })
+    }).then(function (r) {
+      var html = "";
+      (r.briefs || []).forEach(function (b) {
+        html += '<div class="insight"><b>' + esc(b.niche) + "</b> " +
+          (b.fit ? "" : '<span class="flag">no-fit</span> ') +
+          esc((b.brief || "").slice(0, 140)) + "…</div>";
+      });
+      document.getElementById("wvOut").innerHTML =
+        html || '<span class="muted">Failed: ' + esc(r.reason || "") + "</span>";
+    });
+  });
+  document.getElementById("crisisScan").addEventListener("click", function () {
+    api("/api/intel/crisis/scan", { method: "POST" }).then(function (r) {
+      setMsg(r.triggered ? ("CRISIS: paused " + r.paused_count + " posts.") : "No crisis detected.",
+        !r.triggered);
+      loadCrisis();
+    });
+  });
+  document.getElementById("crisisLoad").addEventListener("click", loadCrisis);
+  document.getElementById("recRun").addEventListener("click", function () {
+    api("/api/intel/recycle", { method: "POST" }).then(function (r) {
+      document.getElementById("recOut").textContent =
+        r.ok ? r.briefs_created + " refresh briefs sent to the Inbox." : ("Failed: " + (r.reason || ""));
+    });
+  });
+  document.getElementById("festGen").addEventListener("click", function () {
+    api("/api/intel/festivals/generate", { method: "POST" }).then(function (r) {
+      setMsg(r.ok ? (r.packs + " packs, " + r.ideas + " ideas.") : ("Failed: " + (r.reason || "")), !!r.ok);
+      loadFestivals();
+    });
+  });
+  document.getElementById("auRun").addEventListener("click", function () {
+    document.getElementById("auOut").innerHTML = '<span class="muted">Analysing…</span>';
+    api("/api/intel/autopsy", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        niche: document.getElementById("auNiche").value,
+        source_url: document.getElementById("auUrl").value,
+        text: document.getElementById("auText").value,
+        metrics: {
+          likes: +document.getElementById("auLikes").value || 0,
+          comments: +document.getElementById("auComments").value || 0,
+          shares: +document.getElementById("auShares").value || 0
+        }
+      })
+    }).then(function (r) {
+      if (!r.ok) {
+        document.getElementById("auOut").innerHTML = '<span class="muted">Failed: ' + esc(r.reason || "") + "</span>";
+        return;
+      }
+      var t = r.teardown || {};
+      document.getElementById("auOut").innerHTML =
+        "<p><b>Hook:</b> " + esc(t.hook || "—") + "</p>" +
+        "<p><b>Format:</b> " + esc(t.format_guess || "—") +
+        " · <b>CTA:</b> " + (t.has_cta ? "yes" : "no") + "</p>" +
+        "<p><b>Brief:</b> " + esc(r.brief || "") + "</p>" +
+        '<p class="muted">Saved — brief sent to the Inbox.</p>';
+    });
+  });
+
+  loadNiches(); loadPulse(); loadHealth(); loadShadow(); loadTrends(); loadCrisis(); loadFestivals();
+})();
+</script>
+</body>
+</html>

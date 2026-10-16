@@ -1,0 +1,99 @@
+{% extends "admin_base.html" %}
+{% set active = "generate" %}
+{% block title %}Image Studio{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>✦ Image Studio</h1><p class="muted">Niche → prompt → provider → generate. Browser wali jobs Browser Apps mein poori hoti hain.</p></div>
+</div>
+
+<div class="card" style="margin-bottom:18px">
+  <div class="field">
+    <label>Niche</label>
+    <select class="input" id="f-niche">
+      {% for n in niches %}<option value="{{ n }}">{{ n }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label>Prompt <span class="faint">(ya neeche idea se uthao)</span></label>
+    <textarea class="input" id="f-prompt" placeholder="e.g. Cinematic close-up of crispy chicken samosas on a dark slate plate, steam rising, warm side light, ultra realistic food photography…"></textarea>
+  </div>
+  <div class="field">
+    <label>Ya idea se prompt banao</label>
+    <select class="input" id="f-idea" onchange="useIdea(this)">
+      <option value="">— idea select karein —</option>
+      {% for i in pending_ideas %}<option value="{{ i.id }}" data-niche="{{ i.niche }}" data-title="{{ i.title|e }}">#{{ i.id }} [{{ i.niche }}] {{ i.title[:60] }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label>Provider</label>
+    <div class="prov-grid" id="provs">
+      {% for pid, plabel in providers %}
+      <div class="prov {{ 'sel' if loop.first else '' }}" data-p="{{ pid }}" onclick="selProv('{{ pid }}')">
+        <b>{{ plabel.split(' (')[0] }}</b><span>{{ plabel }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <button class="btn primary" id="genbtn" onclick="generate()">✦ Generate image</button>
+  <span class="faint small" id="gennote" style="margin-left:10px"></span>
+</div>
+
+<h2>Jobs</h2>
+<div id="jobs">
+{% for j in jobs %}
+  <div class="job" data-id="{{ j.id }}">
+    {% if j.result_path %}<img class="thumb" src="{{ url_for('admin.media', rel=j.result_path) }}" onclick="lb(this.src)">
+    {% else %}<div class="thumb" style="width:84px;height:84px;border-radius:10px;background:var(--surface3);flex:0 0 84px;display:flex;align-items:center;justify-content:center;font-size:1.6rem">🖼</div>{% endif %}
+    <div class="grow">
+      <div><span class="pill" style="border:1px solid {{ colors.get(j.niche,'#666') }};color:{{ colors.get(j.niche,'#999') }}">{{ j.niche or 'general' }}</span>
+      {% if j.status=='done' %}<span class="pill green">Done</span>
+      {% elif j.status=='failed' %}<span class="pill red">Failed</span>
+      {% elif j.status=='generating' %}<span class="pill blue">Generating…</span>
+      {% else %}<span class="pill amber">Queued (browser)</span>{% endif %}
+      <span class="faint small">{{ j.provider }} · #{{ j.id }}</span></div>
+      <div class="prompt" style="margin:8px 0">{{ j.prompt[:160] }}</div>
+      {% if j.status=='done' %}
+      <div class="btn-row">
+        <button class="btn sm" onclick="lb('{{ url_for('admin.media', rel=j.result_path) }}')">Preview</button>
+        <button class="btn sm primary" onclick="useBatch({{ j.id }},this)">Use in batch →</button>
+        <a class="btn sm ghost" href="{{ url_for('admin.media', rel=j.result_path) }}" download>Download</a>
+      </div>
+      {% elif j.status in ('queued',) %}
+      <div class="btn-row"><a class="btn sm" href="{{ url_for('admin.browser') }}">Open in Browser Apps →</a>
+      <button class="btn sm ghost" onclick="copyText(document.querySelector('.job[data-id=&quot;{{ j.id }}&quot;] .prompt').textContent,'Prompt copied!')">Copy prompt</button></div>
+      {% elif j.error %}<div class="small" style="color:var(--red)">{{ j.error[:160] }}</div>{% endif %}
+    </div>
+  </div>
+{% endfor %}
+{% if not jobs %}<div class="empty"><div class="big">✦</div>Abhi koi job nahi — upar se pehli image banayein.</div>{% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+var prov='instant';
+function selProv(p){ prov=p; document.querySelectorAll('.prov').forEach(function(e){e.classList.toggle('sel', e.dataset.p===p)});
+  document.getElementById('gennote').textContent = (p==='instant') ? 'Turant ban jayegi (free).' : 'Browser Apps mein queue hogi — wahan se ChatGPT/Gemini/Flow mein generate karein.'; }
+function useIdea(sel){ var o=sel.selectedOptions[0]; if(!o||!o.value) return;
+  document.getElementById('f-niche').value=o.dataset.niche;
+  document.getElementById('f-prompt').value='High-quality social media visual for: '+o.dataset.title+'. Photorealistic, clean composition, no text overlay.'; }
+async function generate(){
+  var prompt=document.getElementById('f-prompt').value.trim();
+  if(!prompt){ toast('Pehle prompt likhein'); return; }
+  var b=document.getElementById('genbtn'); b.disabled=true; b.textContent='Working…';
+  try{
+    var r=await api('/admin/api/generate',{method:'POST',body:JSON.stringify({
+      niche:document.getElementById('f-niche').value, prompt:prompt, provider:prov,
+      idea_id:document.getElementById('f-idea').value||null})});
+    toast(prov==='instant' ? '✦ Image ready!' : 'Queued → Browser Apps mein dekhein');
+    setTimeout(function(){location.reload()}, 1200);
+  }catch(e){ toast('Error: '+e.message); b.disabled=false; b.textContent='✦ Generate image'; }
+}
+async function useBatch(id, btn){
+  btn.disabled=true;
+  try{ var r=await api('/admin/api/jobs/'+id+'/use-in-batch',{method:'POST'});
+    toast('→ Batch output mein save ho gayi'); }
+  catch(e){ toast('Error: '+e.message); btn.disabled=false; }
+}
+selProv('instant');
+</script>
+{% endblock %}

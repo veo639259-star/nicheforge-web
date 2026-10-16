@@ -1,0 +1,49 @@
+{% extends "admin_base.html" %}
+{% set active = "chat" %}
+{% block title %}Forge Chat{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>✎ Forge Chat</h1><p class="muted">Aap ka built-in assistant — batches, captions, ideas, errors. Roman Urdu ya English mein poochein.</p></div>
+  <button class="btn sm ghost" onclick="clearChat()">Clear chat</button>
+</div>
+<div class="chat-wrap">
+  <div class="chat-log" id="log">
+    {% for m in history %}
+    <div class="msg {{ m.role }}">{% if m.role=='user' %}🧑{% endif %}{{ m.content }}</div>
+    {% endfor %}
+    {% if not history %}
+    <div class="msg bot">Assalam-o-Alaikum! 👋 Main Forge hun.<br><br>Main kar sakta hun:<br>• Batches/niches ka status batana<br>• Captions likhna<br>• Naye ideas suggest karna<br>• Errors asaan lafzon mein samjhana<br><br>Kuch poochein — misal: <i>"deen ke pending ideas kitne hain?"</i></div>
+    {% endif %}
+  </div>
+  <div class="typing" id="typing">Forge likh raha hai…</div>
+  <div class="chat-input">
+    <input class="input" id="inp" placeholder="Yahan likhein…" autocomplete="off" onkeydown="if(event.key==='Enter')send()">
+    <button class="btn primary" onclick="send()">Send</button>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+var log=document.getElementById('log');
+log.scrollTop=log.scrollHeight;
+function addMsg(role, text, meta){
+  var d=document.createElement('div'); d.className='msg '+role; d.textContent=text;
+  if(meta){var m=document.createElement('div');m.className='meta';m.textContent=meta;d.appendChild(m);}
+  log.appendChild(d); log.scrollTop=log.scrollHeight;
+}
+async function send(){
+  var inp=document.getElementById('inp'), t=inp.value.trim(); if(!t) return;
+  inp.value=''; addMsg('user','🧑 '+t);
+  document.getElementById('typing').style.display='block';
+  try{
+    var r=await api('/admin/api/chat',{method:'POST',body:JSON.stringify({message:t})});
+    document.getElementById('typing').style.display='none';
+    addMsg('bot', r.reply, 'via '+r.provider+' · '+r.model);
+  }catch(e){
+    document.getElementById('typing').style.display='none';
+    addMsg('bot','⚠️ '+e.message);
+  }
+}
+async function clearChat(){ try{ await api('/admin/api/chat/clear',{method:'POST'}); location.reload(); }catch(e){ toast(e.message); } }
+</script>
+{% endblock %}

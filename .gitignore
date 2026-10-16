@@ -1,0 +1,12 @@
+# NicheForge Web — never commit secrets
+config.json
+nicheforge_core/config.json
+.master-password
+*.db
+nicheforge_core/*.db
+__pycache__/
+*/__pycache__/
+error_logs/
+hidden_files/alerts.jsonl
+nicheforge_core/workspace/
+.env

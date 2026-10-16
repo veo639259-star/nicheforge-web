@@ -1,0 +1,18 @@
+# ---- NicheForge ignores ----
+
+# Encrypted API key config - NEVER commit this.
+config.json
+
+# SQLite database(s) - local state only.
+*.db
+
+# Python bytecode.
+__pycache__/
+*.pyc
+
+# Per-niche generated content - ignore everything...
+workspace/niches/*/assets/*
+workspace/niches/*/output/*
+# ...except the placeholder files that keep the folders in git.
+!workspace/niches/*/assets/.gitkeep
+!workspace/niches/*/output/.gitkeep

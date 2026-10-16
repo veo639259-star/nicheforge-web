@@ -1,0 +1,9 @@
+# NicheForge Web — deploy dependencies.
+# Core: web UI, HTTP calls, encrypted key storage, image work, browser track.
+flask
+requests
+cryptography
+pillow
+playwright
+# Production server (Railway / Render / local prod)
+gunicorn

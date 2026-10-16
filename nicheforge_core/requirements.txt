@@ -1,0 +1,10 @@
+# NicheForge - Phase 1+2 dependencies
+# Intentionally light: web UI, HTTP calls, encrypted key storage.
+# No JavaScript build step (no npm) and no ML libraries.
+flask
+requests
+cryptography
+pillow
+# Phase 3 (browser track): real Chrome automation on his PC.
+# After pip install, run once:  playwright install chromium
+playwright

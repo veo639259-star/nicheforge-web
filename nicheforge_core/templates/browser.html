@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NicheForge — Browser Track</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: #0f1115; color: #e8e9ec; margin: 0; padding: 24px; }
+  h1 { font-size: 1.4rem; margin: 0 0 16px; }
+  h1 span { color: #7dd87d; }
+  h2 { font-size: 1.05rem; margin: 0 0 10px; color: #9fc2ee; }
+  nav { display: flex; gap: 14px; margin-bottom: 20px; font-size: 0.92rem; flex-wrap: wrap; }
+  nav a { color: #9fc2ee; text-decoration: none; }
+  nav a.here { color: #fff; font-weight: 700; }
+  .panel { background: #171a21; border: 1px solid #2a2e38; border-radius: 10px;
+           padding: 16px; max-width: 860px; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #2a2e38; }
+  th { color: #9fc2ee; font-weight: 600; }
+  select, input[type=text] {
+    background: #1a1d24; color: #e8e9ec; border: 1px solid #333844;
+    border-radius: 6px; padding: 8px 10px; font-size: 0.92rem; }
+  select { width: auto; } input[type=text] { width: 100%; }
+  .row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; align-items: center; }
+  button { cursor: pointer; border: none; border-radius: 6px; padding: 8px 16px;
+           font-size: 0.88rem; font-weight: 600; background: #2f6db3; color: #fff; }
+  button:hover { background: #3a7dc4; }
+  button.ghost { background: #3a3f4b; }
+  button.danger { background: #8a2f2f; }
+  button:disabled { opacity: .5; cursor: default; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; }
+  .pill.active { background: #1d3a24; color: #7dd87d; }
+  .pill.paused { background: #3a2b12; color: #f0c36d; }
+  .pill.expired { background: #3a1d1d; color: #e88; }
+  #pasteBanner { display: none; background: #12331d; border: 2px solid #7dd87d;
+                 border-radius: 10px; padding: 16px; max-width: 860px; margin-bottom: 16px; }
+  #pasteBanner.show { display: block; }
+  .note { font-size: 0.85rem; color: #9a9fae; margin-top: 8px; }
+  #out { font-size: 0.9rem; margin-top: 8px; }
+  #out.ok { color: #7dd87d; } #out.err { color: #e88; }
+</style>
+</head>
+<body>
+  <h1>NicheForge <span>— Browser Track</span></h1>
+  <nav>
+    <a href="/">Inbox</a><a href="/pipeline">Pipeline</a>
+    <a href="/overlay">Overlay Studio</a><a href="/schedule">Schedule</a>
+    <a href="/publish">Publish</a><a href="/browser" class="here">Browser</a><a href="/intel">Intel</a><a href="/expand">Expand</a>
+  </nav>
+
+  <div id="pasteBanner">
+    <h2>✋ Paste karo — human paste point</h2>
+    <div id="pasteDetail" style="margin-bottom:10px"></div>
+    <div class="row">
+      <button id="pasteDone">Done — resume automation</button>
+      <button id="pasteSkip" class="ghost">Skip this one</button>
+    </div>
+    <div class="note">Automation is paused. Paste the text in the real browser window, then click Done.</div>
+  </div>
+
+  <div class="panel">
+    <h2>Stealth scheduler</h2>
+    <div id="stealthInfo">Loading…</div>
+  </div>
+
+  <div class="panel">
+    <h2>Chrome profiles</h2>
+    <div class="row">
+      <button id="syncBtn">Sync profiles from config</button>
+      <span class="note">Registers one profile per niche × service × email from the encrypted config.</span>
+    </div>
+    <div id="profileTable">Loading…</div>
+    <div id="out"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Login sessions</h2>
+    <div id="loginTable">Loading…</div>
+  </div>
+
+  <div class="panel">
+    <h2>Image queue</h2>
+    <div class="row">
+      <select id="imgNiche"></select>
+      <input type="text" id="imgPaths" placeholder="prompt JSON paths, comma-separated (workspace-relative)" style="flex:1;min-width:260px">
+      <button id="imgQueueBtn">Queue</button>
+    </div>
+    <div class="row">
+      <button id="imgDryBtn" class="ghost">Dry-run next queued job (MockDriver, no network)</button>
+    </div>
+    <div id="imgJobs">Loading…</div>
+  </div>
+
+  <div class="panel">
+    <h2>Competitor harvest</h2>
+    <div class="row">
+      <select id="hvNiche"></select>
+      <input type="text" id="hvUrl" placeholder="https://… rival page or post URL" style="flex:1;min-width:260px">
+      <input type="text" id="hvLabel" placeholder="label (optional)" style="max-width:180px">
+      <button id="hvAddBtn">Add target</button>
+    </div>
+    <div class="row">
+      <button id="hvRunBtn" class="ghost">Dry-run harvest (no network)</button>
+    </div>
+    <div id="hvTargets">Loading…</div>
+  </div>
+
+<script>
+const $ = id => document.getElementById(id);
+let niches = [];
+let currentPasteId = null;
+
+async function get(url, opts) {
+  const r = await fetch(url, opts).then(r => r.json());
+  return r;
+}
+function pill(status) {
+  return '<span class="pill ' + status + '">' + status + '</span>';
+}
+async function loadNiches() {
+  const r = await get('/api/niches');
+  niches = r.niches || [];
+  for (const sel of [$('imgNiche'), $('hvNiche')]) {
+    sel.innerHTML = niches.map(n => '<option>' + n + '</option>').join('');
+  }
+}
+async function loadStatus() {
+  const r = await get('/api/browser/status');
+  const s = r.stealth || {};
+  $('stealthInfo').innerHTML =
+    (s.within_window ? '🟢 Inside human hours — automation may run.'
+                     : '🔴 Outside human hours — automation refused.') +
+    '<div class="note">' + (s.policy || '') + '<br>Next allowed start: ' +
+    (s.next_start || '—') + '</div>';
+  const rows = (r.profiles || []).map(p =>
+    '<tr><td>' + p.niche + '</td><td>' + p.service + '</td><td>' + p.email +
+    '</td><td>' + pill(p.status) + '</td><td>' +
+    (p.status === 'paused'
+      ? '<button class="ghost" onclick="resumeProfile(\'' + p.niche + '\',\'' +
+        p.service + '\',\'' + p.email + '\')">Resume (human)</button>' : '') +
+    '</td></tr>').join('');
+  $('profileTable').innerHTML = '<table><tr><th>Niche</th><th>Service</th><th>Email</th><th>Status</th><th></th></tr>' +
+    (rows || '<tr><td colspan="5">No profiles yet — click Sync.</td></tr>') + '</table>' +
+    ((r.parks || []).length ? '<div class="note">⏸ Parked (rate-limited): ' +
+      r.parks.map(x => x.service + '/' + x.email).join(', ') + '</div>' : '');
+  const q = r.image_queue || {};
+  $('imgJobs').innerHTML = '<div class="note">Queued: ' + (q.queued || 0) +
+    ' · Downloading: ' + (q.downloading || 0) + ' · Done: ' + (q.done || 0) +
+    ' · Failed: ' + (q.failed || 0) + ' · Paste points waiting: ' +
+    (r.paste_pending || 0) + '</div>';
+  const lr = (r.login_report || []).map(x =>
+    '<tr><td>' + x.niche + '</td><td>' + x.service + '</td><td>' + x.email +
+    '</td><td>' + pill(x.status) + '</td></tr>').join('');
+  $('loginTable').innerHTML = '<table><tr><th>Niche</th><th>Service</th><th>Email</th><th>Status</th></tr>' +
+    (lr || '<tr><td colspan="4">No profiles registered.</td></tr>') + '</table>';
+}
+async function pollPaste() {
+  const r = await get('/api/browser/paste/next');
+  const b = $('pasteBanner');
+  if (r.paste) {
+    currentPasteId = r.paste.id;
+    $('pasteDetail').innerHTML = '<b>' + r.paste.label + '</b><br>' +
+      (r.paste.url ? '<a href="' + r.paste.url + '" target="_blank" style="color:#9fc2ee">' +
+       r.paste.url + '</a><br>' : '') +
+      '<span class="note">' + (r.paste.context || '') + '</span>';
+    b.classList.add('show');
+  } else {
+    b.classList.remove('show');
+    currentPasteId = null;
+  }
+}
+window.resumeProfile = async (niche, service, email) => {
+  const r = await get('/api/browser/profiles/resume', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({niche, service, email})});
+  $('out').className = r.ok ? 'ok' : 'err';
+  $('out').textContent = r.ok ? 'Profile resumed.' : ('Failed: ' + r.reason);
+  loadStatus();
+};
+$('syncBtn').onclick = async () => {
+  const r = await get('/api/browser/profiles/sync', {method: 'POST'});
+  $('out').className = r.ok ? 'ok' : 'err';
+  $('out').textContent = r.ok ? ('Registered ' + r.registered + ' profiles.')
+                              : ('Failed: ' + r.reason);
+  loadStatus();
+};
+$('pasteDone').onclick = async () => {
+  if (!currentPasteId) return;
+  await get('/api/browser/paste/' + currentPasteId + '/done', {method: 'POST'});
+  pollPaste(); loadStatus();
+};
+$('pasteSkip').onclick = async () => {
+  if (!currentPasteId) return;
+  await get('/api/browser/paste/' + currentPasteId + '/skip', {method: 'POST'});
+  pollPaste(); loadStatus();
+};
+$('imgQueueBtn').onclick = async () => {
+  const paths = $('imgPaths').value.split(',').map(s => s.trim()).filter(Boolean);
+  const r = await get('/api/browser/images/queue', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({niche: $('imgNiche').value, prompt_paths: paths})});
+  $('out').className = r.ok ? 'ok' : 'err';
+  $('out').textContent = r.ok ? ('Queued jobs: ' + r.job_ids.join(', '))
+                              : ('Failed: ' + r.reason);
+  loadStatus();
+};
+$('imgDryBtn').onclick = async () => {
+  $('out').className = ''; $('out').textContent = 'Dry-running…';
+  const r = await get('/api/browser/images/dryrun', {method: 'POST',
+    headers: {'Content-Type': 'application/json'}, body: '{}'});
+  $('out').className = r.ok ? 'ok' : 'err';
+  $('out').textContent = r.ok ? 'Dry-run OK: ' + JSON.stringify(r.result)
+                              : ('Failed: ' + r.reason);
+  loadStatus();
+};
+$('hvAddBtn').onclick = async () => {
+  const r = await get('/api/browser/harvest/targets', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({niche: $('hvNiche').value, url: $('hvUrl').value,
+                          label: $('hvLabel').value})});
+  $('out').className = r.ok ? 'ok' : 'err';
+  $('out').textContent = r.ok ? 'Target added.' : ('Failed: ' + r.reason);
+  loadTargets();
+};
+$('hvRunBtn').onclick = async () => {
+  $('out').className = ''; $('out').textContent = 'Dry-running harvest…';
+  const r = await get('/api/browser/harvest/run', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({niche: $('hvNiche').value, dry_run: true})});
+  $('out').className = r.ok ? 'ok' : 'err';
+  $('out').textContent = r.ok ? 'Harvest dry-run: ' + JSON.stringify(r.result)
+                              : ('Failed: ' + r.reason);
+};
+async function loadTargets() {
+  const r = await get('/api/browser/harvest/targets');
+  const rows = (r.targets || []).map(t =>
+    '<tr><td>' + t.niche + '</td><td>' + (t.label || '') + '</td><td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+    t.url + '</td></tr>').join('');
+  $('hvTargets').innerHTML = '<table><tr><th>Niche</th><th>Label</th><th>URL</th></tr>' +
+    (rows || '<tr><td colspan="3">No targets yet.</td></tr>') + '</table>';
+}
+loadNiches().then(() => { loadStatus(); loadTargets(); pollPaste(); });
+setInterval(pollPaste, 10000);
+setInterval(loadStatus, 30000);
+</script>
+</body>
+</html>

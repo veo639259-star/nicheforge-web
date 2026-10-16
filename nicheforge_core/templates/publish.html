@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NicheForge — Publish</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: #0f1115; color: #e8e9ec; margin: 0; padding: 24px; }
+  h1 { font-size: 1.4rem; margin: 0 0 16px; }
+  h1 span { color: #7dd87d; }
+  nav { display: flex; gap: 14px; margin-bottom: 20px; font-size: 0.92rem; }
+  nav a { color: #9fc2ee; text-decoration: none; }
+  nav a.here { color: #fff; font-weight: 700; }
+  .panel { background: #171a21; border: 1px solid #2a2e38; border-radius: 10px;
+           padding: 16px; max-width: 720px; margin-bottom: 16px; }
+  select, input[type=text], textarea {
+    background: #1a1d24; color: #e8e9ec; border: 1px solid #333844;
+    border-radius: 6px; padding: 8px 10px; font-size: 0.95rem; width: 100%; }
+  textarea { min-height: 110px; resize: vertical; }
+  .row { margin-bottom: 10px; }
+  label { display: block; font-size: 0.82rem; color: #9aa0ae; margin-bottom: 4px; }
+  button { cursor: pointer; border: none; border-radius: 6px; padding: 10px 18px;
+           font-size: 0.92rem; font-weight: 600; background: #2e7d32; color: #fff; }
+  button:hover { background: #388e3c; }
+  button:disabled { opacity: .5; }
+  #out { font-size: 0.9rem; margin-top: 8px; white-space: pre-wrap; }
+  #out.ok { color: #7dd87d; } #out.err { color: #e88; }
+  .warn { background: #3a2b12; border: 1px solid #8a6d2f; border-radius: 8px;
+          padding: 10px 14px; font-size: 0.88rem; margin-bottom: 16px; max-width: 720px; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+  .check input { width: auto; }
+</style>
+</head>
+<body>
+  <h1>NicheForge <span>— Publish</span></h1>
+  <nav>
+    <a href="/">Inbox</a><a href="/pipeline">Pipeline</a>
+    <a href="/overlay">Overlay Studio</a><a href="/schedule">Schedule</a>
+    <a href="/publish" class="here">Publish</a><a href="/browser">Browser</a><a href="/intel">Intel</a><a href="/expand">Expand</a>
+  </nav>
+
+  <div class="warn" id="cfgwarn" style="display:none">
+    No Facebook pages configured. Run <b>setup_keys.py</b> and add Facebook Pages,
+    then restart with <b>NICHEFORGE_PASSWORD</b> set.
+  </div>
+
+  <div class="panel">
+    <div class="row">
+      <label>Facebook Page</label>
+      <select id="pageSel"><option value="">Loading…</option></select>
+    </div>
+    <div class="row">
+      <label>Image (workspace-relative path, e.g. niches/deen/output/card-final.png)</label>
+      <input type="text" id="imgPath" placeholder="niches/deen/output/…">
+    </div>
+    <div class="row">
+      <label>Caption</label>
+      <textarea id="caption"></textarea>
+    </div>
+    <div class="row">
+      <label>Schedule for (optional — UTC, e.g. 2026-10-16T09:00:00)</label>
+      <input type="text" id="sched" placeholder="leave empty to publish now">
+    </div>
+    <div class="row check">
+      <input type="checkbox" id="dryrun" checked>
+      <label for="dryrun" style="margin:0">Dry run (no network — safe default)</label>
+    </div>
+    <div class="row">
+      <button id="pubBtn">Publish</button>
+    </div>
+    <div id="out"></div>
+  </div>
+
+<script>
+const $ = id => document.getElementById(id);
+async function loadPages() {
+  const r = await fetch('/api/publish/pages').then(r => r.json());
+  if (!r.configured) { $('cfgwarn').style.display = 'block'; }
+  $('pageSel').innerHTML = (r.pages || []).length
+    ? r.pages.map(p => '<option>' + p.label + '</option>').join('')
+    : '<option value="">No pages configured</option>';
+}
+$('pubBtn').onclick = async () => {
+  const label = $('pageSel').value;
+  const image_path = $('imgPath').value.trim();
+  if (!label || !image_path) { $('out').className = 'err'; $('out').textContent = 'Page and image path are required.'; return; }
+  if (!$('dryrun').checked && !confirm('DRY RUN IS OFF — this will publish for real. Continue?')) return;
+  $('pubBtn').disabled = true;
+  $('out').className = ''; $('out').textContent = 'Publishing…';
+  try {
+    const r = await fetch('/api/publish', {method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({label: label, image_path: image_path,
+        caption: $('caption').value,
+        scheduled_utc: $('sched').value.trim() || null,
+        dry_run: $('dryrun').checked})}).then(r => r.json());
+    if (r.ok) {
+      $('out').className = 'ok';
+      $('out').textContent = r.dry_run
+        ? 'DRY RUN OK — would post to page ' + r.page_id + ' (' + r.caption_len + ' chars)' +
+          (r.scheduled_utc ? ' scheduled at ' + r.scheduled_utc : ' immediately') + '.'
+        : (r.post_id ? 'PUBLISHED — post id ' + r.post_id : 'Result: ' + JSON.stringify(r));
+    } else { $('out').className = 'err'; $('out').textContent = 'Failed: ' + (r.reason || r.error); }
+  } catch (e) { $('out').className = 'err'; $('out').textContent = 'Error: ' + e; }
+  $('pubBtn').disabled = false;
+};
+loadPages();
+</script>
+</body>
+</html>

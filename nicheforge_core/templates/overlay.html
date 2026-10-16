@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NicheForge — Overlay Studio</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: #0f1115; color: #e8e9ec; margin: 0; padding: 24px; }
+  h1 { font-size: 1.4rem; margin: 0 0 16px; }
+  h1 span { color: #7dd87d; }
+  nav { display: flex; gap: 14px; margin-bottom: 20px; font-size: 0.92rem; }
+  nav a { color: #9fc2ee; text-decoration: none; }
+  nav a.here { color: #fff; font-weight: 700; }
+  .panel { background: #171a21; border: 1px solid #2a2e38; border-radius: 10px;
+           padding: 16px; max-width: 720px; margin-bottom: 16px; }
+  select, input[type=text], textarea {
+    background: #1a1d24; color: #e8e9ec; border: 1px solid #333844;
+    border-radius: 6px; padding: 8px 10px; font-size: 0.95rem; width: 100%; }
+  textarea { min-height: 90px; resize: vertical; }
+  .row { margin-bottom: 10px; }
+  label { display: block; font-size: 0.82rem; color: #9aa0ae; margin-bottom: 4px; }
+  button { cursor: pointer; border: none; border-radius: 6px; padding: 10px 18px;
+           font-size: 0.92rem; font-weight: 600; background: #2f6db3; color: #fff; }
+  button:hover { background: #3a7dc4; }
+  button:disabled { opacity: .5; }
+  #out { font-size: 0.9rem; margin-top: 8px; }
+  #out.ok { color: #7dd87d; } #out.err { color: #e88; }
+  #preview { max-width: 100%; border-radius: 10px; margin-top: 10px; display: none; }
+  .filelist { font-size: 0.85rem; margin-top: 8px; }
+  .filelist a { color: #9fc2ee; }
+  .hint { font-size: 0.82rem; color: #6b7080; }
+</style>
+</head>
+<body>
+  <h1>NicheForge <span>— Overlay Studio</span></h1>
+  <nav>
+    <a href="/">Inbox</a><a href="/pipeline">Pipeline</a>
+    <a href="/overlay" class="here">Overlay Studio</a><a href="/schedule">Schedule</a>
+    <a href="/publish">Publish</a><a href="/browser">Browser</a><a href="/intel">Intel</a><a href="/expand">Expand</a>
+  </nav>
+
+  <div class="panel">
+    <div class="row">
+      <label>Niche (Urdu overlay allowed)</label>
+      <select id="nicheSel"></select>
+    </div>
+    <div class="row">
+      <label>Base image (text-free background)</label>
+      <input type="file" id="fileInp" accept="image/*">
+      <div class="hint">Uploads into the niche's assets/uploads folder.</div>
+    </div>
+    <div class="row">
+      <label>Urdu lines (one per line)</label>
+      <textarea id="lines" dir="auto" placeholder="پہلی سطر&#10;دوسری سطر"></textarea>
+    </div>
+    <div class="row">
+      <label>Attribution (optional — poet / reference)</label>
+      <input type="text" id="attr" dir="auto" placeholder="مرزا غالب">
+    </div>
+    <div class="row">
+      <button id="renderBtn">Render card</button>
+    </div>
+    <div id="out"></div>
+    <img id="preview" alt="rendered card preview">
+    <div class="filelist" id="filelist"></div>
+  </div>
+
+<script>
+const $ = id => document.getElementById(id);
+let basePath = '';
+async function loadNiches() {
+  const r = await fetch('/api/overlay/niches').then(r => r.json());
+  $('nicheSel').innerHTML = r.niches.map(n => '<option>' + n + '</option>').join('');
+  listFiles();
+}
+$('nicheSel').onchange = () => { basePath = ''; listFiles(); };
+$('fileInp').onchange = async () => {
+  const f = $('fileInp').files[0];
+  if (!f) return;
+  const fd = new FormData();
+  fd.append('niche', $('nicheSel').value);
+  fd.append('image', f);
+  const r = await fetch('/api/overlay/upload', {method: 'POST', body: fd}).then(r => r.json());
+  if (r.ok) { basePath = r.path; $('out').className = 'ok'; $('out').textContent = 'Uploaded: ' + r.path; }
+  else { $('out').className = 'err'; $('out').textContent = 'Upload failed: ' + r.reason; }
+};
+$('renderBtn').onclick = async () => {
+  const lines = $('lines').value.split('\n').map(s => s.trim()).filter(Boolean);
+  if (!basePath) { $('out').className = 'err'; $('out').textContent = 'Upload a base image first.'; return; }
+  if (!lines.length) { $('out').className = 'err'; $('out').textContent = 'Enter at least one Urdu line.'; return; }
+  $('renderBtn').disabled = true;
+  $('out').className = ''; $('out').textContent = 'Rendering…';
+  try {
+    const r = await fetch('/api/overlay/render', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({base_path: basePath, niche: $('nicheSel').value,
+                            lines: lines, attribution: $('attr').value.trim() || null})
+    }).then(r => r.json());
+    if (r.ok) {
+      $('out').className = 'ok'; $('out').textContent = 'Saved: ' + r.path;
+      $('preview').src = '/api/files?path=' + encodeURIComponent(r.path);
+      $('preview').style.display = 'block';
+      listFiles();
+    } else { $('out').className = 'err'; $('out').textContent = 'Failed: ' + r.reason; }
+  } catch (e) { $('out').className = 'err'; $('out').textContent = 'Error: ' + e; }
+  $('renderBtn').disabled = false;
+};
+async function listFiles() {
+  const n = $('nicheSel').value;
+  if (!n) return;
+  const r = await fetch('/api/overlay/list?niche=' + n).then(r => r.json());
+  $('filelist').innerHTML = (r.files || []).map(p =>
+    '<div>🖼️ <a href="/api/files?path=' + encodeURIComponent(p) + '" target="_blank">' + p + '</a></div>').join('');
+}
+loadNiches();
+</script>
+</body>
+</html>

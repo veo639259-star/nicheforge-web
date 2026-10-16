@@ -1,0 +1,68 @@
+{% extends "admin_base.html" %}
+{% set active = "keys" %}
+{% block title %}Keys{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>⚿ API keys & tokens</h1><p class="muted">Sab kuch encrypted — yahan sirf masked nazar aata hai.</p></div></div>
+
+{% if not configured %}
+<div class="warn">⚠️ <b>config.json nahi mila</b> ya <b>NICHEFORGE_PASSWORD</b> set nahi.<br>
+Pehle server par <code>python nicheforge_core/setup_keys.py</code> ek dafa chalayein, aur NICHEFORGE_PASSWORD env var set karein.</div>
+{% else %}
+
+<h2>AI providers (key ladder)</h2>
+<div class="grid cards2" style="margin-bottom:22px">
+{% for p in providers %}
+  <div class="card">
+    <div class="niche-top"><b style="text-transform:capitalize">{{ p.name }}</b>
+    {% if p.count %}<span class="pill green">{{ p.count }} keys</span>{% else %}<span class="pill grey">No keys</span>{% endif %}</div>
+    <div class="small faint">{{ p.models or '—' }}</div>
+    {% for k in p.keys %}<div><code class="small">{{ k }}</code></div>{% endfor %}
+  </div>
+{% endfor %}
+</div>
+
+<div class="card" style="margin-bottom:22px">
+  <h3>Add API key</h3>
+  <div class="field"><label>Provider</label>
+    <select class="input" id="k-prov">
+      {% for p in providers %}<option value="{{ p.name }}">{{ p.name }}</option>{% endfor %}
+    </select></div>
+  <div class="field"><label>Key</label><input class="input" id="k-key" type="password" placeholder="paste key…"></div>
+  <button class="btn primary" onclick="addKey(this)">Add key</button>
+</div>
+
+<h2>Facebook pages ({{ pages|length }})</h2>
+<div class="grid cards2" style="margin-bottom:22px">
+{% for pg in pages %}
+  <div class="card"><b>{{ pg.label }}</b><div class="small faint">page {{ pg.page_id }}</div><div><code class="small">{{ pg.token }}</code></div></div>
+{% endfor %}
+{% if not pages %}<div class="empty"><div class="big">📄</div>Koi page connect nahi.</div>{% endif %}
+</div>
+
+<div class="card">
+  <h3>Add / update Facebook page</h3>
+  <div class="field"><label>Label (niche name)</label><input class="input" id="p-label" placeholder="e.g. deen"></div>
+  <div class="field"><label>Page ID</label><input class="input" id="p-id" placeholder="123456789"></div>
+  <div class="field"><label>Page token</label><input class="input" id="p-token" type="password" placeholder="paste token…"></div>
+  <button class="btn primary" onclick="addPage(this)">Save page</button>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+async function addKey(btn){
+  var p=document.getElementById('k-prov').value, k=document.getElementById('k-key').value.trim();
+  if(!k){toast('Key paste karein');return;} btn.disabled=true;
+  try{ await api('/admin/api/keys/add',{method:'POST',body:JSON.stringify({provider:p,key:k})});
+    toast('✓ Key add ho gayi'); setTimeout(function(){location.reload()},1000);
+  }catch(e){toast('Error: '+e.message);btn.disabled=false;}
+}
+async function addPage(btn){
+  var d={label:document.getElementById('p-label').value.trim(),page_id:document.getElementById('p-id').value.trim(),token:document.getElementById('p-token').value.trim()};
+  if(!d.label||!d.page_id||!d.token){toast('Teeno fields zaroori hain');return;} btn.disabled=true;
+  try{ await api('/admin/api/keys/page',{method:'POST',body:JSON.stringify(d)});
+    toast('✓ Page save ho gaya'); setTimeout(function(){location.reload()},1000);
+  }catch(e){toast('Error: '+e.message);btn.disabled=false;}
+}
+</script>
+{% endblock %}

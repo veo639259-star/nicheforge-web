@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NicheForge — Expand</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: #0f1115; color: #e8e9ec; margin: 0; padding: 24px; }
+  h1 { font-size: 1.4rem; margin: 0 0 16px; }
+  h1 span { color: #7dd87d; }
+  h2 { font-size: 1.05rem; margin: 0 0 10px; color: #cfe3ff; }
+  nav { display: flex; gap: 14px; margin-bottom: 20px; font-size: 0.92rem; flex-wrap: wrap; }
+  nav a { color: #9fc2ee; text-decoration: none; }
+  nav a.here { color: #fff; font-weight: 700; }
+  .panel { background: #171a21; border: 1px solid #2a2e38; border-radius: 10px;
+           padding: 16px; max-width: 860px; margin-bottom: 16px; }
+  .panel p.desc { font-size: 0.85rem; color: #9aa0ae; margin: 0 0 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-top: 8px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid #262a34; vertical-align: top; }
+  th { color: #9aa0ae; font-weight: 600; font-size: 0.78rem; text-transform: uppercase; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+  .ok { background: #1d3a24; color: #7dd87d; }
+  .no { background: #3a2323; color: #e88; }
+  .warnp { background: #3a2b12; color: #e8b34b; }
+  button { cursor: pointer; border: none; border-radius: 6px; padding: 8px 16px;
+           font-size: 0.88rem; font-weight: 600; background: #2e7d32; color: #fff; margin-right: 8px; margin-top: 6px; }
+  button:hover { background: #388e3c; }
+  button.ghost { background: #2a2e38; }
+  button.danger { background: #7d2e2e; }
+  input[type=text], select, textarea { background: #1a1d24; color: #e8e9ec;
+    border: 1px solid #333844; border-radius: 6px; padding: 8px 10px; font-size: 0.9rem; }
+  input[type=text] { width: 100%; }
+  .row { margin-bottom: 8px; }
+  label { display: block; font-size: 0.8rem; color: #9aa0ae; margin-bottom: 4px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  #out { font-size: 0.88rem; margin-top: 8px; white-space: pre-wrap; }
+  .notes { font-size: 0.82rem; color: #9aa0ae; background: #14161c; border-radius: 6px; padding: 8px 10px; margin-top: 6px; white-space: pre-wrap; }
+  .flash { position: fixed; top: 14px; right: 14px; background: #1d3a24; color: #7dd87d;
+           padding: 10px 16px; border-radius: 8px; font-size: 0.88rem; display: none; z-index: 50; }
+  .flash.err { background: #3a2323; color: #e88; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <h1>NicheForge <span>— Expand</span></h1>
+  <nav>
+    <a href="/">Inbox</a><a href="/pipeline">Pipeline</a>
+    <a href="/overlay">Overlay Studio</a><a href="/schedule">Schedule</a>
+    <a href="/publish">Publish</a><a href="/browser">Browser</a><a href="/intel">Intel</a>
+    <a href="/expand" class="here">Expand</a>
+  </nav>
+  <div class="flash" id="flash"></div>
+
+  <div class="panel">
+    <h2>Platform plug-ins</h2>
+    <p class="desc">Facebook is live. Other platforms show honest "not connected yet" status with setup notes — nothing is faked.</p>
+    <div id="platforms">Loading…</div>
+  </div>
+
+  <div class="panel">
+    <h2>Reel engine</h2>
+    <p class="desc">Assemble a vertical 1080×1920 reel from local images (ffmpeg slideshow with pan/zoom, ≤60s). Queue first, then build.</p>
+    <div class="grid2">
+      <div class="row"><label>Niche</label><input type="text" id="reelNiche" placeholder="e.g. memeistan"></div>
+      <div class="row"><label>Caption</label><input type="text" id="reelCaption" placeholder="reel caption"></div>
+    </div>
+    <div class="row"><label>Image paths (workspace-relative, one per line)</label><textarea id="reelImgs" rows="3" placeholder="niches/memeistan/assets/2026-10-16/img1.png"></textarea></div>
+    <button id="reelQueue">Queue reel</button>
+    <div id="reels">Loading…</div>
+  </div>
+
+  <div class="panel">
+    <h2>Comment guardian</h2>
+    <p class="desc">Fetches recent comments, filters spam/abuse, drafts replies for genuine questions. <b>Nothing auto-posts</b> — every reply waits for your approval.</p>
+    <div class="grid2">
+      <div class="row"><label>Niche</label><input type="text" id="cgNiche" placeholder="e.g. paheli"></div>
+      <div class="row"><label>Post ID (Facebook)</label><input type="text" id="cgPost" placeholder="page_post id"></div>
+    </div>
+    <button id="cgFetch">Fetch &amp; draft replies</button>
+    <div id="replies">Loading…</div>
+  </div>
+
+  <div class="panel">
+    <h2>WhatsApp remote</h2>
+    <p class="desc">Command protocol (v1): send commands, NicheForge executes and replies. Commands: STATUS, PAUSE &lt;niche&gt;, RESUME &lt;niche&gt;, APPROVE &lt;id&gt;, REJECT &lt;id&gt;, QUEUE, HELP. Real WhatsApp wiring (Twilio/Cloud API) plugs into the webhook slot later.</p>
+    <div class="grid2">
+      <div class="row"><label>Simulate incoming message (sender)</label><input type="text" id="waSender" value="owner"></div>
+      <div class="row"><label>Command</label><input type="text" id="waBody" placeholder="STATUS"></div>
+    </div>
+    <button id="waSend">Send to inbox</button>
+    <button id="waProcess" class="ghost">Process inbox</button>
+    <div id="waOut">Loading…</div>
+  </div>
+
+  <div class="panel">
+    <h2>Credit guard</h2>
+    <p class="desc">Tracks free-tier usage per provider. Warns at 80%, auto-pauses AI features at 100% (manual resume only).</p>
+    <button id="credRefresh">Refresh</button>
+    <button id="credResume" class="ghost">Resume AI (manual)</button>
+    <div id="credits">Loading…</div>
+  </div>
+
+  <div class="panel">
+    <h2>Offline queue</h2>
+    <p class="desc">Failed network work is stored durably and replayed in order when you are back online. Approved items are never lost.</p>
+    <button id="offRefresh">Refresh</button>
+    <button id="offReplay">Replay queue</button>
+    <div id="offline">Loading…</div>
+  </div>
+
+  <div class="panel">
+    <h2>Backup vault</h2>
+    <p class="desc">One-click encrypted-state backup (DB, config, assets). Keeps the last 7 automatically. Restore always makes a safety backup first.</p>
+    <button id="bkCreate">Create backup now</button>
+    <div id="backups">Loading…</div>
+  </div>
+
+  <div class="panel">
+    <h2>Launch checklist</h2>
+    <p class="desc">Pre-flight checks before a production run.</p>
+    <button id="lcRun">Run checks</button>
+    <div id="launch">Not run yet.</div>
+  </div>
+
+  <div class="panel">
+    <h2>Self-updater</h2>
+    <p class="desc">Checks the local <b>dist/</b> folder for a newer bundle and applies it backup-first. No network involved.</p>
+    <div class="row"><label>Current version</label><div id="curVer">…</div></div>
+    <button id="upCheck">Check for update</button>
+    <div id="update">Not checked yet.</div>
+  </div>
+
+<script>
+const $ = id => document.getElementById(id);
+function flash(msg, err) {
+  const f = $("flash"); f.textContent = msg; f.className = "flash" + (err ? " err" : "");
+  f.style.display = "block"; setTimeout(() => f.style.display = "none", 3500);
+}
+async function get(url) { const r = await fetch(url); return r.json(); }
+async function post(url, body) {
+  const r = await fetch(url, {method: "POST", headers: {"Content-Type": "application/json"},
+                              body: JSON.stringify(body || {})});
+  return r.json();
+}
+const pill = (txt, cls) => '<span class="pill ' + cls + '">' + txt + "</span>";
+
+async function loadPlatforms() {
+  const d = await get("/api/platforms");
+  let h = '<table><tr><th>Platform</th><th>Status</th><th>Detail</th><th>Setup</th></tr>';
+  for (const p of (d.platforms || [])) {
+    const st = p.connected ? pill("connected", "ok") : pill("not connected", "no");
+    h += "<tr><td><b>" + p.name + "</b></td><td>" + st + "</td><td>" + (p.detail || "") +
+         '</td><td><div class="notes">' + (p.setup_notes || "") + "</div></td></tr>";
+  }
+  $("platforms").innerHTML = h + "</table>";
+}
+
+async function loadReels() {
+  const d = await get("/api/reels");
+  let h = '<table><tr><th>ID</th><th>Niche</th><th>Status</th><th>Output</th><th></th></tr>';
+  for (const r of (d.reels || [])) {
+    const cls = r.status === "ready" ? "ok" : (r.status === "failed" ? "no" : "warnp");
+    h += "<tr><td>" + r.id + "</td><td>" + r.niche + "</td><td>" + pill(r.status, cls) + "</td><td>" +
+         (r.out_path || "—") + "</td><td>" +
+         (r.status === "queued" ? '<button data-build="' + r.id + '">Build</button>' : "") + "</td></tr>";
+  }
+  $("reels").innerHTML = h + "</table>";
+  document.querySelectorAll("[data-build]").forEach(b => b.onclick = async () => {
+    const r = await post("/api/reels/build", {reel_id: +b.dataset.build});
+    flash(r.ok ? "Reel built: " + r.out_path : "Build failed: " + r.reason, !r.ok);
+    loadReels();
+  });
+}
+
+async function loadReplies() {
+  const d = await get("/api/comments/replies?status=pending");
+  let h = d.replies && d.replies.length ? '<table><tr><th>Niche</th><th>Comment</th><th>Suggested reply</th><th></th></tr>' : "<p class='desc'>No pending replies.</p>";
+  for (const r of (d.replies || [])) {
+    h += "<tr><td>" + r.niche + "</td><td>" + (r.text || "").slice(0, 120) + "</td><td>" +
+         (r.suggested_reply || "").slice(0, 160) + "</td><td>" +
+         '<button data-appr="' + r.id + '">Approve</button>' +
+         '<button data-rej="' + r.id + '" class="danger">Reject</button></td></tr>';
+  }
+  $("replies").innerHTML = h + (d.replies && d.replies.length ? "</table>" : "");
+  document.querySelectorAll("[data-appr]").forEach(b => b.onclick = async () => {
+    await post("/api/comments/replies/" + b.dataset.appr + "/approve", {}); loadReplies();
+  });
+  document.querySelectorAll("[data-rej]").forEach(b => b.onclick = async () => {
+    await post("/api/comments/replies/" + b.dataset.rej + "/reject", {}); loadReplies();
+  });
+}
+
+async function loadWA() {
+  const d = await get("/api/remote/outbox");
+  let h = "<p class='desc'>Pending outgoing replies:</p>";
+  h += d.outbox && d.outbox.length ? "<ul>" + d.outbox.map(o =>
+    "<li>→ <b>" + o.recipient + "</b>: " + (o.body || "").slice(0, 200) + "</li>").join("") + "</ul>"
+    : "<p class='desc'>Outbox empty.</p>";
+  $("waOut").innerHTML = h;
+}
+
+async function loadCredits() {
+  const d = await get("/api/credits");
+  if (d.error) { $("credits").innerHTML = "<p class='desc'>" + d.error + "</p>"; return; }
+  let h = d.ai_paused ? pill("AI PAUSED — " + (d.pause_reason || ""), "no") + "<br><br>" : "";
+  h += '<table><tr><th>Provider</th><th>Used today</th><th>Quota</th><th></th></tr>';
+  for (const [name, p] of Object.entries(d.providers || {})) {
+    const cls = p.state === "exhausted" ? "no" : (p.state === "warning" ? "warnp" : "ok");
+    h += "<tr><td>" + name + "</td><td>" + p.used + "</td><td>" + p.quota + "</td><td>" + pill(p.state, cls) + "</td></tr>";
+  }
+  $("credits").innerHTML = h + "</table>";
+}
+
+async function loadOffline() {
+  const d = await get("/api/offline");
+  let h = d.queue && d.queue.length ? '<table><tr><th>ID</th><th>Kind</th><th>Status</th><th>Attempts</th><th>Error</th></tr>' : "<p class='desc'>Queue empty — nothing lost, nothing pending.</p>";
+  for (const q of (d.queue || [])) {
+    h += "<tr><td>" + q.id + "</td><td>" + q.kind + "</td><td>" + q.status + "</td><td>" +
+         q.attempts + "</td><td>" + (q.last_error || "—").slice(0, 80) + "</td></tr>";
+  }
+  $("offline").innerHTML = h + (d.queue && d.queue.length ? "</table>" : "");
+}
+
+async function loadBackups() {
+  const d = await get("/api/backup/list");
+  let h = d.backups && d.backups.length ? '<table><tr><th>Backup</th><th>Size</th><th>Created</th><th></th></tr>' : "<p class='desc'>No backups yet.</p>";
+  for (const b of (d.backups || [])) {
+    const name = b.path.split("/").pop();
+    h += "<tr><td>" + name + "</td><td>" + (b.size / 1024).toFixed(0) + " KB</td><td>" +
+         b.created_at + "</td><td><button data-restore='" + name + "' class='ghost'>Restore</button></td></tr>";
+  }
+  $("backups").innerHTML = h + (d.backups && d.backups.length ? "</table>" : "");
+  document.querySelectorAll("[data-restore]").forEach(b => b.onclick = async () => {
+    if (!confirm("Restore " + b.dataset.restore + "? A safety backup is made first.")) return;
+    const r = await post("/api/backup/restore", {name: b.dataset.restore});
+    flash(r.ok ? "Restored. Safety backup: " + r.pre_restore_backup : "Restore failed: " + r.reason, !r.ok);
+    loadBackups();
+  });
+}
+
+async function runLaunch() {
+  const d = await get("/api/launch");
+  let h = '<table><tr><th>Check</th><th>Status</th><th>Detail</th></tr>';
+  for (const c of (d.checks || [])) {
+    const cls = c.status === "pass" ? "ok" : (c.status === "warn" ? "warnp" : "no");
+    h += "<tr><td>" + c.label + "</td><td>" + pill(c.status, cls) + "</td><td>" + (c.detail || "") + "</td></tr>";
+  }
+  const s = d.summary || {};
+  $("launch").innerHTML = h + "</table><p class='desc'>pass " + (s.pass || 0) + " · warn " +
+    (s.warn || 0) + " · fail " + (s.fail || 0) + "</p>";
+}
+
+async function checkUpdate() {
+  const d = await get("/api/update/check");
+  $("curVer").textContent = d.current || "unknown";
+  if (d.error) { $("update").innerHTML = "<p class='desc'>" + d.error + "</p>"; return; }
+  if (!d.available) { $("update").innerHTML = "<p class='desc'>You are on the latest local bundle.</p>"; return; }
+  const name = "nicheforge-" + d.dist + ".zip";
+  $("update").innerHTML = "<p class='desc'>Update available: <b>" + d.dist + "</b></p>" +
+    "<button id='upApply'>Apply update (backup first)</button>";
+  $("upApply").onclick = async () => {
+    const r = await post("/api/update/apply", {name});
+    flash(r.ok ? "Updated to " + r.updated_to : "Update failed: " + r.reason, !r.ok);
+    checkUpdate();
+  };
+}
+
+$("reelQueue").onclick = async () => {
+  const imgs = $("reelImgs").value.split("\n").map(s => s.trim()).filter(Boolean);
+  const r = await post("/api/reels/queue", {niche: $("reelNiche").value.trim(), images: imgs, caption: $("reelCaption").value});
+  flash(r.ok ? "Reel queued (#" + r.reel_id + ")" : "Queue failed: " + r.reason, !r.ok);
+  loadReels();
+};
+$("cgFetch").onclick = async () => {
+  const r = await post("/api/comments/fetch", {niche: $("cgNiche").value.trim(), post_id: $("cgPost").value.trim()});
+  flash(r.ok ? "Fetched " + r.fetched + ", drafted " + r.queued : "Fetch failed: " + r.reason, !r.ok);
+  loadReplies();
+};
+$("waSend").onclick = async () => {
+  const r = await post("/api/remote/webhook", {sender: $("waSender").value.trim(), body: $("waBody").value});
+  flash(r.ok ? "Message queued in inbox" : "Failed: " + r.reason, !r.ok);
+  $("waBody").value = "";
+};
+$("waProcess").onclick = async () => {
+  const r = await post("/api/remote/process", {});
+  flash(r.ok ? "Inbox processed" : "Failed: " + r.reason, !r.ok);
+  loadWA();
+};
+$("credRefresh").onclick = loadCredits;
+$("credResume").onclick = async () => { await post("/api/credits/resume", {}); loadCredits(); };
+$("offRefresh").onclick = loadOffline;
+$("offReplay").onclick = async () => {
+  const r = await post("/api/offline/replay", {});
+  flash(r.ok ? "Replayed: " + r.done + " done, " + r.failed + " failed" : "Failed: " + r.reason, !r.ok);
+  loadOffline();
+};
+$("bkCreate").onclick = async () => {
+  const r = await post("/api/backup/create", {});
+  flash(r.ok ? "Backup created: " + r.path : "Backup failed: " + r.reason, !r.ok);
+  loadBackups();
+};
+$("lcRun").onclick = runLaunch;
+$("upCheck").onclick = checkUpdate;
+
+loadPlatforms(); loadReels(); loadReplies(); loadWA(); loadCredits(); loadOffline(); loadBackups(); checkUpdate();
+</script>
+</body>
+</html>

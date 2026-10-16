@@ -1,0 +1,22 @@
+{% extends "admin_base.html" %}
+{% set active = "schedule" %}
+{% block title %}Schedule{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Schedule</h1><p class="muted">Posting timeline · times in PKT</p></div>
+  <form method="get"><input type="date" class="input" name="day" value="{{ day }}" onchange="this.form.submit()" style="width:auto"></form>
+</div>
+{% if posts %}
+<div class="timeline">
+{% for p in posts %}
+  <div class="tl-item {{ 'done' if p.status in ('posted','done') else 'next' }}">
+    <div class="tl-time">{{ p.time }} <span class="pill" style="border:1px solid {{ colors.get(p.niche,'#666') }};color:{{ colors.get(p.niche,'#999') }}">{{ p.niche }}</span>
+    <span class="pill {{ 'green' if p.status in ('posted','done') else 'grey' }}">{{ p.status }}</span></div>
+    <div class="card tl-card"><b>{{ p.title or ('Post #'+p.id|string) }}</b></div>
+  </div>
+{% endfor %}
+</div>
+{% else %}
+<div class="empty"><div class="big">◷</div><b>{{ day }} ke liye kuch schedule nahi</b><br>Batches approve kar ke schedule banayein.</div>
+{% endif %}
+{% endblock %}

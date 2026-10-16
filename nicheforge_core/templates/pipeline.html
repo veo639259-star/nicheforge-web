@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NicheForge — Content Pipeline</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: #0f1115; color: #e8e9ec; margin: 0; padding: 24px; }
+  h1 { font-size: 1.4rem; margin: 0 0 16px; }
+  h1 span { color: #7dd87d; }
+  nav { display: flex; gap: 14px; margin-bottom: 20px; font-size: 0.92rem; }
+  nav a { color: #9fc2ee; text-decoration: none; }
+  nav a.here { color: #fff; font-weight: 700; }
+  .panel { background: #171a21; border: 1px solid #2a2e38; border-radius: 10px;
+           padding: 16px; max-width: 720px; margin-bottom: 16px; }
+  select, input[type=text], textarea {
+    background: #1a1d24; color: #e8e9ec; border: 1px solid #333844;
+    border-radius: 6px; padding: 8px 10px; font-size: 0.95rem; width: 100%; }
+  .row { display: flex; gap: 10px; margin-bottom: 10px; }
+  button { cursor: pointer; border: none; border-radius: 6px; padding: 10px 18px;
+           font-size: 0.92rem; font-weight: 600; background: #2f6db3; color: #fff; }
+  button:hover { background: #3a7dc4; }
+  button:disabled { opacity: .5; cursor: default; }
+  #out { font-size: 0.9rem; }
+  #out.ok { color: #7dd87d; } #out.err { color: #e88; }
+  .art { margin: 6px 0; } .art a { color: #9fc2ee; }
+  .warn { background: #3a2b12; border: 1px solid #8a6d2f; border-radius: 8px;
+          padding: 10px 14px; font-size: 0.88rem; margin-bottom: 16px; max-width: 720px; }
+</style>
+</head>
+<body>
+  <h1>NicheForge <span>— Content Pipeline</span></h1>
+  <nav>
+    <a href="/">Inbox</a><a href="/pipeline" class="here">Pipeline</a>
+    <a href="/overlay">Overlay Studio</a><a href="/schedule">Schedule</a>
+    <a href="/publish">Publish</a><a href="/browser">Browser</a><a href="/intel">Intel</a><a href="/expand">Expand</a>
+  </nav>
+
+  <div class="warn" id="keywarn" style="display:none">
+    API keys are not configured in this session. Run <b>setup_keys.py</b>, then
+    restart the app with the <b>NICHEFORGE_PASSWORD</b> environment variable set.
+  </div>
+
+  <div class="panel">
+    <div class="row">
+      <select id="ideaSel"><option value="">Loading approved ideas…</option></select>
+    </div>
+    <div class="row">
+      <button id="runBtn">Run pipeline: dossier → caption → prompt</button>
+      <button id="statusBtn" style="background:#3a3f4b">Check artefacts</button>
+    </div>
+    <div id="out"></div>
+  </div>
+
+<script>
+const $ = id => document.getElementById(id);
+async function loadIdeas() {
+  const r = await fetch('/api/ideas?status=approved').then(r => r.json());
+  const sel = $('ideaSel');
+  sel.innerHTML = '<option value="">Pick an approved idea…</option>';
+  (r.ideas || []).forEach(i => {
+    const o = document.createElement('option');
+    o.value = i.id; o.textContent = '#' + i.id + ' [' + i.niche + '] ' + i.title;
+    sel.appendChild(o);
+  });
+  if (!(r.ideas || []).length) sel.innerHTML = '<option value="">No approved ideas yet</option>';
+}
+async function checkKeys() {
+  // cheap probe: overlay niches need no keys; pipeline does — try a status call is keyless.
+  // We show the warning only after a run fails with the key message.
+}
+$('runBtn').onclick = async () => {
+  const id = $('ideaSel').value;
+  if (!id) return;
+  $('runBtn').disabled = true;
+  $('out').className = ''; $('out').textContent = 'Running… (this can take a minute)';
+  try {
+    const r = await fetch('/api/pipeline/run', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({idea_id: parseInt(id, 10)})}).then(r => r.json());
+    if (r.ok) {
+      $('out').className = 'ok';
+      $('out').innerHTML = 'Done for idea #' + r.idea_id + ' (' + r.niche + ')<br>' +
+        ['dossier_path','caption_path','prompt_path'].map(k =>
+          '<div class="art">📄 ' + k.replace('_path','') + ': <a href="/api/files?path=' +
+          encodeURIComponent(r[k]) + '" target="_blank">' + r[k] + '</a></div>').join('');
+    } else {
+      $('out').className = 'err'; $('out').textContent = 'Failed: ' + r.reason;
+      if (/setup_keys/.test(r.reason || '')) $('keywarn').style.display = 'block';
+    }
+  } catch (e) { $('out').className = 'err'; $('out').textContent = 'Error: ' + e; }
+  $('runBtn').disabled = false;
+};
+$('statusBtn').onclick = async () => {
+  const id = $('ideaSel').value;
+  if (!id) return;
+  const r = await fetch('/api/pipeline/status?idea_id=' + id).then(r => r.json());
+  if (!r.ok) { $('out').className = 'err'; $('out').textContent = r.reason; return; }
+  $('out').className = 'ok';
+  $('out').innerHTML = Object.entries(r.artefacts).map(([k, v]) =>
+    '<div class="art">' + (v ? '✅' : '⬜') + ' ' + k + '</div>').join('');
+};
+loadIdeas();
+</script>
+</body>
+</html>

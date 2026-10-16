@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NicheForge — Schedule</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: #0f1115; color: #e8e9ec; margin: 0; padding: 24px; }
+  h1 { font-size: 1.4rem; margin: 0 0 16px; }
+  h1 span { color: #7dd87d; }
+  nav { display: flex; gap: 14px; margin-bottom: 20px; font-size: 0.92rem; }
+  nav a { color: #9fc2ee; text-decoration: none; }
+  nav a.here { color: #fff; font-weight: 700; }
+  .panel { background: #171a21; border: 1px solid #2a2e38; border-radius: 10px;
+           padding: 16px; max-width: 860px; margin-bottom: 16px; }
+  input[type=date], select {
+    background: #1a1d24; color: #e8e9ec; border: 1px solid #333844;
+    border-radius: 6px; padding: 8px 10px; font-size: 0.95rem; }
+  .row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+  button { cursor: pointer; border: none; border-radius: 6px; padding: 9px 16px;
+           font-size: 0.9rem; font-weight: 600; background: #2f6db3; color: #fff; }
+  button:hover { background: #3a7dc4; }
+  button.danger { background: #b3392f; }
+  button:disabled { opacity: .5; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #242832; }
+  th { color: #9aa0ae; font-size: 0.8rem; text-transform: uppercase; letter-spacing: .05em; }
+  .clash { background: #3a1f1a; border: 1px solid #8a3d2f; border-radius: 8px;
+           padding: 10px 14px; font-size: 0.88rem; margin-bottom: 12px; }
+  .ok-msg { color: #7dd87d; font-size: 0.9rem; margin-bottom: 12px; }
+  #msg { font-size: 0.9rem; min-height: 1.4em; }
+  #msg.err { color: #e88; } #msg.ok { color: #7dd87d; }
+  .hint { font-size: 0.82rem; color: #6b7080; }
+</style>
+</head>
+<body>
+  <h1>NicheForge <span>— Schedule</span></h1>
+  <nav>
+    <a href="/">Inbox</a><a href="/pipeline">Pipeline</a>
+    <a href="/overlay">Overlay Studio</a><a href="/schedule" class="here">Schedule</a>
+    <a href="/publish">Publish</a><a href="/browser">Browser</a><a href="/intel">Intel</a><a href="/expand">Expand</a>
+  </nav>
+
+  <div class="panel">
+    <div class="row">
+      <input type="date" id="dateInp">
+      <select id="nicheSel"><option value="">All niches</option></select>
+      <button id="planBtn">Plan day</button>
+      <button id="clearBtn" class="danger">Clear day</button>
+      <button id="refreshBtn" style="background:#3a3f4b">Refresh</button>
+    </div>
+    <div class="hint">Slots 09:00–21:00 PKT · ≥90 min per niche · no two posts within 30 min globally.</div>
+    <div id="msg" style="margin-top:8px"></div>
+  </div>
+
+  <div class="panel">
+    <div id="clashes"></div>
+    <table>
+      <thead><tr><th>Slot (PKT)</th><th>Niche</th><th>Idea</th><th>Status</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="4">Pick a date and press Refresh.</td></tr></tbody>
+    </table>
+  </div>
+
+<script>
+const $ = id => document.getElementById(id);
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+async function loadNiches() {
+  const r = await fetch('/api/niches').then(r => r.json());
+  $('nicheSel').innerHTML = '<option value="">All niches</option>' +
+    r.niches.map(n => '<option>' + n + '</option>').join('');
+}
+async function refresh() {
+  const d = $('dateInp').value;
+  if (!d) return;
+  const r = await fetch('/api/schedule?date=' + d).then(r => r.json());
+  if (!r.ok) { $('msg').className = 'err'; $('msg').textContent = r.reason; return; }
+  $('msg').className = '';
+  $('rows').innerHTML = r.rows.length ? r.rows.map(x =>
+    '<tr><td>' + (x.slot_pkt || '').slice(11, 16) + '</td><td>' + x.niche +
+    '</td><td>#' + x.idea_id + '</td><td>' + x.status + '</td></tr>').join('')
+    : '<tr><td colspan="4">Nothing scheduled.</td></tr>';
+  $('clashes').innerHTML = r.clashes.length
+    ? '<div class="clash">⚠️ ' + r.clashes.length + ' clash(es): ' +
+      r.clashes.map(c => '#' + c.a_id + '(' + c.a_niche + ') ↔ #' + c.b_id +
+        '(' + c.b_niche + '), gap ' + c.gap_min + ' min').join('; ') + '</div>'
+    : (r.rows.length ? '<div class="ok-msg">✅ No clashes — all gaps ≥ 30 min.</div>' : '');
+}
+$('planBtn').onclick = async () => {
+  const d = $('dateInp').value;
+  if (!d) return;
+  $('planBtn').disabled = true;
+  const r = await fetch('/api/schedule/plan', {method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({date: d, niche: $('nicheSel').value || null})}).then(r => r.json());
+  $('planBtn').disabled = false;
+  if (!r.ok) { $('msg').className = 'err'; $('msg').textContent = r.reason; return; }
+  $('msg').className = 'ok';
+  $('msg').textContent = 'Placed ' + r.placed.length +
+    (r.unplaced.length ? ', unplaced: ' + r.unplaced.join(', ') : '.');
+  refresh();
+};
+$('clearBtn').onclick = async () => {
+  const d = $('dateInp').value;
+  if (!d || !confirm('Clear all scheduled posts for ' + d + '?')) return;
+  const r = await fetch('/api/schedule/clear', {method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({date: d})}).then(r => r.json());
+  $('msg').className = 'ok'; $('msg').textContent = 'Cleared ' + (r.cleared || 0) + ' rows.';
+  refresh();
+};
+$('refreshBtn').onclick = refresh;
+$('dateInp').value = todayStr();
+loadNiches(); refresh();
+</script>
+</body>
+</html>

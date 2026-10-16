@@ -1,0 +1,18 @@
+{% extends "admin_base.html" %}
+{% set active = "gallery" %}
+{% block title %}Gallery{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Gallery</h1><p class="muted">{{ images|length }} images · tap to preview</p></div></div>
+{% if images %}
+<div class="gal-grid">
+{% for im in images %}
+  <div class="gal-item" onclick="lb('{{ url_for('admin.media', rel=im.rel) }}')">
+    <img src="{{ url_for('admin.media', rel=im.rel) }}" loading="lazy" alt="{{ im.name }}">
+    <span class="gal-tag" style="border-left:3px solid {{ colors.get(im.niche,'#666') }}">{{ im.niche }}</span>
+  </div>
+{% endfor %}
+</div>
+{% else %}
+<div class="empty"><div class="big">▤</div><b>Gallery khaali hai</b><br>Image Studio se pehli image banayein.</div>
+{% endif %}
+{% endblock %}

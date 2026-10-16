@@ -1,0 +1,37 @@
+{% extends "admin_base.html" %}
+{% set active = "dashboard" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Dashboard</h1><p class="muted">Saare 14 niches ek nazar mein · {{ totals.pending }} approvals pending</p></div>
+  <div class="btn-row">
+    <a class="btn primary" href="{{ url_for('admin.batches') }}">Review batches →</a>
+  </div>
+</div>
+
+<div class="stat-row">
+  <div class="stat"><div class="num">{{ totals.pending }}</div><div class="lbl">Pending approvals</div></div>
+  <div class="stat"><div class="num" style="color:var(--red)">{{ totals.open_errors }}</div><div class="lbl">Open errors</div></div>
+  <div class="stat"><div class="num">{{ totals.scheduled_today }}</div><div class="lbl">Scheduled today</div></div>
+  <div class="stat"><div class="num">{{ totals.jobs_done }}</div><div class="lbl">Images generated</div></div>
+</div>
+
+<div class="grid niches">
+{% for s in stats %}
+  <div class="card niche-card hover">
+    <div class="niche-top">
+      <div class="niche-name"><span class="dot" style="background:{{ s.color }}"></span>{{ s.niche }}</div>
+      {% if s.status=='healthy' %}<span class="pill green"><span class="dotlive"></span>Healthy</span>
+      {% elif s.status=='attention' %}<span class="pill amber"><span class="dotlive"></span>{{ s.pending }} pending</span>
+      {% elif s.status=='error' %}<span class="pill red"><span class="dotlive"></span>{{ s.errors }} errors</span>
+      {% else %}<span class="pill grey">Idle</span>{% endif %}
+    </div>
+    <div class="niche-meta">{{ s.approved }} approved · last batch {{ s.last_batch or '—' }}</div>
+    <div class="niche-bar"><i style="width:{{ (100*s.approved//(s.approved+s.pending+1)) }}%; background:{{ s.color }}"></i></div>
+    <div class="btn-row" style="margin-top:12px">
+      <a class="btn sm ghost" href="{{ url_for('admin.batches') }}?niche={{ s.niche }}">Open →</a>
+    </div>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

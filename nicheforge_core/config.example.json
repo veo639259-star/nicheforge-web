@@ -1,0 +1,72 @@
+{
+  "_comment": "NicheForge key-ladder config. Put ONE or more API keys per provider (comma-separated in setup_keys.py becomes this list). Enter to skip a provider keeps it disabled -- the ladder just skips providers with no keys. pollinations needs NO key. Get free keys: Google AI Studio (Gemini), console.groq.com (Groq), build.nvidia.com (NVIDIA NIM), openrouter.ai (OpenRouter), z.ai (Z.ai GLM). NEVER commit this file with real keys -- setup_keys.py stores it ENCRYPTED in config.json. browser_accounts: login emails per AI service for the Phase-3 browser track (multiple emails per service = rotation pool).",
+  "providers": [
+    {
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "keys": [
+        "PUT_KEY_HERE"
+      ],
+      "models": [
+        "gemini-2.5-flash"
+      ],
+      "name": "gemini"
+    },
+    {
+      "base_url": "https://api.groq.com/openai/v1",
+      "keys": [
+        "PUT_KEY_HERE"
+      ],
+      "models": [
+        "llama-3.3-70b-versatile"
+      ],
+      "name": "groq"
+    },
+    {
+      "base_url": "https://integrate.api.nvidia.com/v1",
+      "keys": [
+        "PUT_KEY_HERE"
+      ],
+      "models": [
+        "meta/llama-3.3-70b-instruct"
+      ],
+      "name": "nvidia"
+    },
+    {
+      "base_url": "https://openrouter.ai/api/v1",
+      "keys": [
+        "PUT_KEY_HERE"
+      ],
+      "models": [
+        "meta-llama/llama-3.3-70b-instruct:free"
+      ],
+      "name": "openrouter"
+    },
+    {
+      "base_url": "https://text.pollinations.ai/openai",
+      "keys": [],
+      "models": [
+        "openai"
+      ],
+      "name": "pollinations"
+    },
+    {
+      "base_url": "https://api.z.ai/api/paas/v4",
+      "keys": [
+        "PUT_KEY_HERE"
+      ],
+      "models": [
+        "glm-4.5-flash"
+      ],
+      "name": "zai"
+    }
+  ],
+  "browser_accounts": {
+    "chatgpt": [
+      "you@example.com"
+    ],
+    "claude": [],
+    "gemini": [
+      "you@example.com"
+    ]
+  }
+}

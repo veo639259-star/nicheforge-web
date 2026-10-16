@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NicheForge — Approval Inbox</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: #0f1115; color: #e8e9ec; margin: 0; padding: 24px; }
+  h1 { font-size: 1.4rem; margin: 0 0 16px; }
+  h1 span { color: #7dd87d; }
+  nav { display: flex; gap: 14px; margin-bottom: 20px; font-size: 0.92rem; }
+  nav a { color: #9fc2ee; text-decoration: none; }
+  nav a.here { color: #fff; font-weight: 700; }
+  .bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  select, input[type=text], textarea {
+    background: #1a1d24; color: #e8e9ec; border: 1px solid #333844;
+    border-radius: 6px; padding: 8px 10px; font-size: 0.95rem; }
+  select:focus, input:focus, textarea:focus { outline: none; border-color: #7dd87d; }
+  #ideas { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+           gap: 12px; margin-bottom: 28px; }
+  .card { background: #171a21; border: 1px solid #2a2e38; border-radius: 10px;
+          padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .tag { align-self: flex-start; font-size: 0.72rem; letter-spacing: .06em;
+         text-transform: uppercase; background: #24334a; color: #9fc2ee;
+         padding: 3px 9px; border-radius: 999px; }
+  .card h3 { margin: 0; font-size: 1.02rem; line-height: 1.35; }
+  .card p { margin: 0; font-size: 0.9rem; color: #b9bcc4; line-height: 1.45;
+            white-space: pre-wrap; }
+  .meta { font-size: 0.75rem; color: #6b7080; }
+  .sbadge { font-size: 0.72rem; font-weight: 700; padding: 2px 8px;
+            border-radius: 999px; }
+  .sbadge.hi { background: #1e4d2b; color: #7dd87d; }
+  .sbadge.mid { background: #4a3d1e; color: #e8c86a; }
+  .sbadge.lo { background: #4a2420; color: #e89a8a; }
+  .actions { display: flex; gap: 8px; margin-top: auto; padding-top: 6px; }
+  button { cursor: pointer; border: none; border-radius: 6px; padding: 8px 16px;
+           font-size: 0.9rem; font-weight: 600; }
+  .approve { background: #2e7d32; color: #fff; }
+  .approve:hover { background: #388e3c; }
+  .reject { background: #b3392f; color: #fff; }
+  .reject:hover { background: #c94436; }
+  .add { background: #171a21; border: 1px solid #2a2e38; border-radius: 10px;
+         padding: 16px; max-width: 640px; }
+  .add h2 { font-size: 1.05rem; margin: 0 0 12px; }
+  .add .row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .add select { flex: 0 0 200px; }
+  .add input[type=text] { flex: 1 1 240px; }
+  .add textarea { width: 100%; min-height: 64px; resize: vertical; }
+  .add button { background: #2f6db3; color: #fff; }
+  .add button:hover { background: #3a7dc4; }
+  #msg { margin-top: 10px; font-size: 0.9rem; min-height: 1.4em; }
+  #msg.ok { color: #7dd87d; } #msg.err { color: #e88; }
+  #empty { color: #6b7080; font-size: 0.95rem; grid-column: 1 / -1; }
+  .counts { font-size: 0.8rem; color: #6b7080; margin-left: auto; align-self: center; }
+</style>
+</head>
+<body>
+  <h1>NicheForge <span>— Approval Inbox</span></h1>
+  <nav>
+    <a href="/" class="here">Inbox</a><a href="/pipeline">Pipeline</a>
+    <a href="/overlay">Overlay Studio</a><a href="/schedule">Schedule</a>
+    <a href="/publish">Publish</a><a href="/browser">Browser</a><a href="/intel">Intel</a><a href="/expand">Expand</a>
+  </nav>
+
+  <div class="bar">
+    <select id="nicheFilter"><option value="">All niches</option></select>
+    <select id="statusFilter">
+      <option value="pending">Pending</option>
+      <option value="approved">Approved</option>
+      <option value="rejected">Rejected</option>
+      <option value="">All statuses</option>
+    </select>
+    <span class="counts" id="counts"></span>
+  </div>
+
+  <div id="ideas"><div id="empty">Loading…</div></div>
+
+  <div class="add">
+    <h2>Add idea</h2>
+    <div class="row">
+      <select id="addNiche"></select>
+      <input type="text" id="addTitle" placeholder="Idea title" maxlength="300">
+    </div>
+    <div class="row">
+      <textarea id="addDetail" placeholder="Detail (optional — helps dedup detection)"></textarea>
+    </div>
+    <button id="addBtn">Add idea</button>
+    <div id="msg"></div>
+  </div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

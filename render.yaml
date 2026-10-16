@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: nicheforge-web
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn web_app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    healthCheckPath: /healthz
+    envVars:
+      - key: NICHEFORGE_ADMIN_PASSWORD
+        sync: false
+      - key: NICHEFORGE_PASSWORD
+        sync: false
+      - key: ALERT_WEBHOOK_URL
+        sync: false

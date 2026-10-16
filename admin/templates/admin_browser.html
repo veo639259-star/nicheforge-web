@@ -1,0 +1,86 @@
+{% extends "admin_base.html" %}
+{% set active = "browser" %}
+{% block title %}Browser Apps{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>❖ Browser Apps</h1><p class="muted">Aap ke signed-in accounts — Flow, ChatGPT, Gemini. Image jobs yahan se poori hoti hain.</p></div>
+</div>
+
+<div class="tabs" id="tabs">
+  {% for s in services %}
+  <button class="tab {{ 'active' if loop.first else '' }}" data-t="{{ s.id }}" onclick="showTab('{{ s.id }}')">{{ s.name }}</button>
+  {% endfor %}
+</div>
+
+{% for s in services %}
+<div class="tabpane {{ 'active' if loop.first else '' }}" id="pane-{{ s.id }}">
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <h2 style="margin:0">{{ s.name }}</h2>
+      {% if s.status=='signed_in' %}<span class="pill green"><span class="dotlive"></span>Signed in</span>
+      {% elif s.status=='rate_limited' %}<span class="pill amber"><span class="dotlive"></span>Rate-limited</span>
+      {% else %}<span class="pill red"><span class="dotlive"></span>Needs login</span>{% endif %}
+    </div>
+    <p class="muted small">{{ s.desc }}</p>
+    <p class="small faint">Profile: <b>{{ s.profile_name }}</b>{% if s.reset_at %} · reset: {{ s.reset_at[:16] }}{% endif %}{% if s.note %} · {{ s.note[:120] }}{% endif %}</p>
+    <div class="btn-row">
+      <a class="btn primary" href="{{ s.url }}" target="_blank" rel="noopener">Open {{ s.name }} ↗</a>
+      <button class="btn sm" onclick="setStatus('{{ s.id }}','signed_in')">Mark signed in</button>
+      <button class="btn sm" onclick="setStatus('{{ s.id }}','needs_login')">Needs login</button>
+      <button class="btn sm" onclick="markLimited('{{ s.id }}')">Rate-limited…</button>
+    </div>
+  </div>
+
+  {% if s.id=='flow' %}
+  <div class="card" style="margin-bottom:14px; border-color:rgba(251,191,36,.35)">
+    <h3>📌 Flow paste helper</h3>
+    <p class="small muted">Flow ka prompt box automation se paste <b>accept nahi karta</b> (known limitation). Is liye: neeche job ka <b>Copy prompt</b> dabayein → Flow kholein → <b>khud ek dafa paste</b> karein → Generate dabayein. Bas ek paste, baqi sab app sambhalta hai.</p>
+  </div>
+  {% endif %}
+
+  <h3>Pending {{ s.name }} jobs ({{ pending[s.id]|length }})</h3>
+  {% for j in pending[s.id] %}
+  <div class="job" data-id="{{ j.id }}">
+    <div class="grow">
+      <div><span class="pill" style="border:1px solid #555;color:#bbb">{{ j.niche or 'general' }}</span>
+      <span class="faint small">#{{ j.id }}</span></div>
+      <div class="prompt" id="pr-{{ j.id }}" style="margin:8px 0; -webkit-line-clamp:4">{{ j.prompt }}</div>
+      <div class="btn-row">
+        <button class="btn sm primary" onclick="copyText(document.getElementById('pr-{{ j.id }}').innerText,'Prompt copied — {{ s.name }} mein paste karein!')">📋 Copy prompt</button>
+        <a class="btn sm" href="{{ s.url }}" target="_blank" rel="noopener">Open {{ s.name }} ↗</a>
+        <label class="btn sm ghost" style="cursor:pointer">📤 Upload result<input type="file" accept="image/*" style="display:none" onchange="upload({{ j.id }},this)"></label>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  {% if not pending[s.id] %}<div class="empty"><div class="big">✓</div>Is service ke liye koi pending job nahi.</div>{% endif %}
+</div>
+{% endfor %}
+{% endblock %}
+{% block scripts %}
+<script>
+function showTab(id){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active', t.dataset.t===id)});
+  document.querySelectorAll('.tabpane').forEach(function(p){p.classList.toggle('active', p.id==='pane-'+id)});
+}
+async function setStatus(svc, status, reset_at, note){
+  try{ await api('/admin/api/browser/'+svc+'/status',{method:'POST',body:JSON.stringify({status:status,reset_at:reset_at||'',note:note||''})});
+    toast('Status updated'); setTimeout(function(){location.reload()},800);
+  }catch(e){ toast('Error: '+e.message); }
+}
+function markLimited(svc){
+  var r=prompt('Reset time (e.g. 2026-10-17 09:00) — khaali chhorein agar maloom nahi:','');
+  if(r===null) return;
+  setStatus(svc,'rate_limited',r,'manual mark');
+}
+async function upload(jobId, input){
+  var f=input.files[0]; if(!f) return;
+  var fd=new FormData(); fd.append('file', f);
+  try{
+    var r=await fetch('/admin/api/jobs/'+jobId+'/upload',{method:'POST',body:fd});
+    var j=await r.json(); if(!r.ok||!j.ok) throw new Error(j.error||('HTTP '+r.status));
+    toast('✓ Result attached — Gallery mein dekhein'); setTimeout(function(){location.reload()},1000);
+  }catch(e){ toast('Upload failed: '+e.message); }
+}
+</script>
+{% endblock %}
